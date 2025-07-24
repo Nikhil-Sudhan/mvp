@@ -1,0 +1,125 @@
+<div class="profile-panel">
+    <div class="panel-header">
+        <h3><i class="fas fa-user"></i> User Profile</h3>
+    </div>
+    <div class="profile-content">
+        <div class="profile-header">
+            <div class="avatar-container">
+                <div class="avatar" id="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <button class="avatar-edit" id="edit-avatar">
+                    <i class="fas fa-camera"></i>
+                </button>
+            </div>
+            <div class="user-info">
+                <h4 id="user-name">Pilot User</h4>
+                <p id="user-role">Licensed Drone Operator</p>
+                <div class="status-badge active">
+                    <i class="fas fa-circle"></i>
+                    <span>Online</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-stats">
+            <div class="stat-item">
+                <div class="stat-value" id="total-flights">0</div>
+                <div class="stat-label">Total Flights</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="flight-hours">0h</div>
+                <div class="stat-label">Flight Hours</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="distance-flown">0km</div>
+                <div class="stat-label">Distance</div>
+            </div>
+        </div>
+
+        <div class="profile-info">
+            <h4><i class="fas fa-info-circle"></i> Profile Information</h4>
+            <div class="info-form">
+                <div class="form-group">
+                    <label>Full Name:</label>
+                    <input type="text" id="full-name" value="Pilot User">
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="email" value="pilot@skyloom.com">
+                </div>
+                <div class="form-group">
+                    <label>Phone:</label>
+                    <input type="tel" id="phone" value="">
+                </div>
+                <div class="form-group">
+                    <label>License Number:</label>
+                    <input type="text" id="license-number" value="">
+                </div>
+                <div class="form-group">
+                    <label>Organization:</label>
+                    <input type="text" id="organization" value="">
+                </div>
+            </div>
+        </div>
+
+        <div class="certification-section">
+            <h4><i class="fas fa-certificate"></i> Certifications</h4>
+            <div class="certifications-list" id="certifications-list">
+                <div class="cert-item">
+                    <div class="cert-icon">
+                        <i class="fas fa-medal"></i>
+                    </div>
+                    <div class="cert-info">
+                        <div class="cert-name">Remote Pilot Certificate</div>
+                        <div class="cert-status valid">Valid</div>
+                        <div class="cert-expiry">Expires: 2025-12-31</div>
+                    </div>
+                </div>
+            </div>
+            <button class="add-cert-btn" id="add-certification">
+                <i class="fas fa-plus"></i>
+                Add Certification
+            </button>
+        </div>
+
+        <div class="recent-activity">
+            <h4><i class="fas fa-clock"></i> Recent Activity</h4>
+            <div class="activity-list" id="activity-list">
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-play"></i>
+                    </div>
+                    <div class="activity-info">
+                        <div class="activity-text">Mission "Survey Flight" completed</div>
+                        <div class="activity-time">2 hours ago</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <div class="activity-info">
+                        <div class="activity-text">Configuration updated</div>
+                        <div class="activity-time">1 day ago</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-actions">
+            <button class="profile-btn save-btn" id="save-profile">
+                <i class="fas fa-save"></i>
+                Save Changes
+            </button>
+            <button class="profile-btn export-btn" id="export-data">
+                <i class="fas fa-download"></i>
+                Export Data
+            </button>
+            <button class="profile-btn logout-btn" id="logout">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+            </button>
+        </div>
+    </div>
+</div> 

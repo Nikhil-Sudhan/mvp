@@ -1,0 +1,59 @@
+{
+  "mission": {
+    "name": "Sky Loom Default Mission",
+    "location": "San Francisco Bay Area",
+    "homeBase": {
+      "longitude": -122.4194,
+      "latitude": 37.7749,
+      "altitude": 0,
+      "name": "HOME BASE",
+      "description": "Landing Pad"
+    },
+    "drone": {
+      "longitude": -122.4194,
+      "latitude": 37.7749,
+      "altitude": 500,
+      "name": "Sky Loom Drone",
+      "description": "Altitude: 500m"
+    },
+    "waypoints": [
+      {
+        "id": "waypoint_1",
+        "name": "Waypoint 1",
+        "longitude": -122.4094,
+        "latitude": 37.7849,
+        "altitude": 600,
+        "description": "First checkpoint"
+      },
+      {
+        "id": "waypoint_2", 
+        "name": "Waypoint 2",
+        "longitude": -122.3994,
+        "latitude": 37.7949,
+        "altitude": 700,
+        "description": "Highest point"
+      },
+      {
+        "id": "waypoint_3",
+        "name": "Waypoint 3", 
+        "longitude": -122.3894,
+        "latitude": 37.8049,
+        "altitude": 600,
+        "description": "Descent checkpoint"
+      },
+      {
+        "id": "waypoint_4",
+        "name": "Waypoint 4",
+        "longitude": -122.3794, 
+        "latitude": 37.8149,
+        "altitude": 500,
+        "description": "Final checkpoint"
+      }
+    ],
+    "flightPath": {
+      "width": 5,
+      "color": "CYAN",
+      "glowPower": 0.2
+    }
+  }
+} 

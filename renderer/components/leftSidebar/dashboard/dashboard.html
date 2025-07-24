@@ -1,0 +1,109 @@
+<div class="dashboard-panel">
+    <div class="panel-header">
+        <h3><i class="fas fa-tachometer-alt"></i> Dashboard</h3>
+    </div>
+    <div class="dashboard-content">
+        <!-- Greeting Section -->
+        <div class="dashboard-greeting">
+            <h2>Hello <span id="user-name">User</span>, here's the daily stats.</h2>
+        </div>
+
+        <!-- Mission Statistics -->
+        <div class="mission-stats">
+            <div class="stat-card ongoing">
+                <div class="stat-header">
+                    <span class="stat-label">Ongoing Missions</span>
+                </div>
+                <div class="stat-value" id="ongoing-missions">0</div>
+            </div>
+            <div class="stat-card returning">
+                <div class="stat-header">
+                    <span class="stat-label">Returning to Base</span>
+                </div>
+                <div class="stat-value" id="returning-missions">0</div>
+            </div>
+            <div class="stat-card pending">
+                <div class="stat-header">
+                    <span class="stat-label">Pending Missions</span>
+                </div>
+                <div class="stat-value" id="pending-missions">0</div>
+            </div>
+            <div class="stat-card completed">
+                <div class="stat-header">
+                    <span class="stat-label">Completed missions</span>
+                </div>
+                <div class="stat-value" id="completed-missions">0</div>
+            </div>
+        </div>
+
+        <!-- Weather Section -->
+        <div class="weather-widget">
+            <div class="section-header">
+                <h4>Weather</h4>
+            </div>
+            <div class="weather-info">
+                <div class="weather-main">
+                    <div class="weather-icon">
+                        <i class="fas fa-cloud-sun"></i>
+                    </div>
+                    <div class="temperature">--°</div>
+                </div>
+                <div class="location">
+                    <select id="location-select">
+                        <option>Select Location</option>
+                        <option>Aundh, Pune</option>
+                        <option>Mumbai</option>
+                        <option>Delhi</option>
+                    </select>
+                </div>
+                <div class="weather-details">
+                    <div class="weather-conditions">
+                        <div class="condition-item">
+                            <i class="fas fa-sun"></i>
+                            <span>Condition: --</span>
+                        </div>
+                        <div class="condition-item">
+                            <i class="fas fa-wind"></i>
+                            <span>Wind speed: -- mph</span>
+                        </div>
+                    </div>
+                    <div class="risk-assessment">
+                        <div class="risk-level">
+                            <span>Risk Level</span>
+                            <span class="risk-indicator safe">--</span>
+                        </div>
+                        <div class="risk-details">
+                            <span>Risk of Overheating: --%</span>
+                            <span>Humidity: --%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="forecast">
+                    <h5>Forecast <span>--</span></h5>
+                    <div class="forecast-hours">
+                        <div class="hour-item">
+                            <span>--</span>
+                            <span class="temp">--°</span>
+                        </div>
+                        <div class="hour-item">
+                            <span>--</span>
+                            <span class="temp">--°</span>
+                        </div>
+                        <div class="hour-item">
+                            <span>--</span>
+                            <span class="temp">--°</span>
+                        </div>
+                        <div class="hour-item">
+                            <span>--</span>
+                            <span class="temp">--°</span>
+                        </div>
+                        <div class="hour-item">
+                            <span>--</span>
+                            <span class="temp">--°</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

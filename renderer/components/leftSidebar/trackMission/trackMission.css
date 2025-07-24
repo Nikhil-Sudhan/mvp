@@ -1,0 +1,540 @@
+.track-mission-panel {
+    height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+    position: relative;
+}
+
+.mission-content {
+    padding: 15px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Extended sidebar for track mission */
+.sidebar.expanded.track-mission-extended {
+    /* Width will be set dynamically by JavaScript */
+    max-width: 1400px;
+}
+
+.sidebar.expanded.track-mission-extended .mission-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px;
+    max-height: none;
+}
+
+.current-mission, .mission-controls, .waypoints-section, .mission-list, .mission-table-container {
+    margin-bottom: 20px;
+    background: var(--editor-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Mission table spans both columns in extended mode */
+.sidebar.expanded.track-mission-extended .mission-table-container {
+    grid-column: 1 / -1;
+}
+
+.mission-content h4 {
+    font-size: 14px;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mission-content h4 i {
+    color: var(--accent-color);
+    font-size: 16px;
+}
+
+/* Mission Table Styles */
+.mission-table-container {
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
+.mission-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 11px;
+}
+
+.mission-table th {
+    background: var(--sidebar-bg);
+    color: var(--text-secondary);
+    padding: 8px 4px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid var(--border-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mission-table td {
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 11px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Extended mode: wider column distribution */
+.sidebar.expanded.track-mission-extended .mission-table th:nth-child(1) { width: 10%; } /* Mission ID */
+.sidebar.expanded.track-mission-extended .mission-table th:nth-child(2) { width: 25%; } /* Mission name */
+.sidebar.expanded.track-mission-extended .mission-table th:nth-child(3) { width: 12%; } /* Status */
+.sidebar.expanded.track-mission-extended .mission-table th:nth-child(4) { width: 15%; } /* Payload */
+.sidebar.expanded.track-mission-extended .mission-table th:nth-child(5) { width: 10%; } /* Battery */
+.sidebar.expanded.track-mission-extended .mission-table th:nth-child(6) { width: 20%; } /* Arrival Time */
+.sidebar.expanded.track-mission-extended .mission-table th:nth-child(7) { width: 8%; }  /* Action */
+
+.sidebar.expanded.track-mission-extended .mission-table td:nth-child(1) { width: 10%; }
+.sidebar.expanded.track-mission-extended .mission-table td:nth-child(2) { width: 25%; }
+.sidebar.expanded.track-mission-extended .mission-table td:nth-child(3) { width: 12%; }
+.sidebar.expanded.track-mission-extended .mission-table td:nth-child(4) { width: 15%; }
+.sidebar.expanded.track-mission-extended .mission-table td:nth-child(5) { width: 10%; }
+.sidebar.expanded.track-mission-extended .mission-table td:nth-child(6) { width: 20%; }
+.sidebar.expanded.track-mission-extended .mission-table td:nth-child(7) { width: 8%; }
+
+/* Normal sidebar mode: column distribution */
+.sidebar.expanded:not(.track-mission-extended) .mission-table th:nth-child(1) { width: 15%; }
+.sidebar.expanded:not(.track-mission-extended) .mission-table th:nth-child(2) { width: 25%; }
+.sidebar.expanded:not(.track-mission-extended) .mission-table th:nth-child(3) { width: 15%; }
+.sidebar.expanded:not(.track-mission-extended) .mission-table th:nth-child(4) { width: 12%; }
+.sidebar.expanded:not(.track-mission-extended) .mission-table th:nth-child(5) { width: 12%; }
+.sidebar.expanded:not(.track-mission-extended) .mission-table th:nth-child(6) { width: 13%; }
+.sidebar.expanded:not(.track-mission-extended) .mission-table th:nth-child(7) { width: 8%; }
+
+.sidebar.expanded:not(.track-mission-extended) .mission-table td:nth-child(1) { width: 15%; }
+.sidebar.expanded:not(.track-mission-extended) .mission-table td:nth-child(2) { width: 25%; }
+.sidebar.expanded:not(.track-mission-extended) .mission-table td:nth-child(3) { width: 15%; }
+.sidebar.expanded:not(.track-mission-extended) .mission-table td:nth-child(4) { width: 12%; }
+.sidebar.expanded:not(.track-mission-extended) .mission-table td:nth-child(5) { width: 12%; }
+.sidebar.expanded:not(.track-mission-extended) .mission-table td:nth-child(6) { width: 13%; }
+.sidebar.expanded:not(.track-mission-extended) .mission-table td:nth-child(7) { width: 8%; }
+
+.mission-table tbody tr:hover {
+    background: var(--button-hover-bg);
+}
+
+.status-badge {
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 500;
+    text-transform: uppercase;
+    display: inline-block;
+    min-width: 40px;
+    text-align: center;
+}
+
+.status-badge.active {
+    background: var(--success-color);
+    color: white;
+}
+
+.status-badge.pending {
+    background: var(--warning-color);
+    color: white;
+}
+
+.status-badge.inactive {
+    background: var(--error-color);
+    color: white;
+}
+
+.action-menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    font-size: 12px;
+}
+
+.action-menu-btn:hover {
+    background: var(--button-hover-bg);
+    color: var(--text-primary);
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    gap: 4px;
+    margin-top: 10px;
+}
+
+.page-btn {
+    background: var(--button-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s ease;
+    min-width: 24px;
+    text-align: center;
+}
+
+.page-btn:hover {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+.page-btn.active {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+.page-btn.prev,
+.page-btn.next {
+    padding: 4px 6px;
+}
+
+.mission-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text-secondary);
+}
+
+.status-indicator.active { background: var(--success-color); }
+.status-indicator.paused { background: var(--warning-color); }
+.status-indicator.error { background: var(--error-color); }
+
+.mission-info {
+    background: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+}
+
+.info-item label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.info-item span {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.progress-bar {
+    position: relative;
+    width: 100px;
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--accent-color);
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.progress-text {
+    position: absolute;
+    top: -20px;
+    right: 0;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.mission-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.mission-btn {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    background: var(--button-bg);
+}
+
+.mission-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.start-btn:not(:disabled):hover {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+}
+
+.pause-btn:not(:disabled):hover {
+    background: var(--warning-color);
+    border-color: var(--warning-color);
+    color: white;
+}
+
+.stop-btn:not(:disabled):hover {
+    background: var(--error-color);
+    border-color: var(--error-color);
+    color: white;
+}
+
+.resume-btn:not(:disabled):hover {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+}
+
+.waypoints-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.waypoint-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin-bottom: 6px;
+    background: var(--sidebar-bg);
+}
+
+.waypoint-number {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.waypoint-info {
+    flex: 1;
+}
+
+.coordinates {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.altitude {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.waypoint-status i {
+    font-size: 8px;
+    color: var(--text-secondary);
+}
+
+.waypoint-status i.completed {
+    color: var(--success-color);
+}
+
+.waypoint-status i.current {
+    color: var(--accent-color);
+}
+
+.waypoint-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.waypoint-btn {
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--button-bg);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 11px;
+    transition: all 0.2s ease;
+}
+
+.waypoint-btn:hover {
+    background: var(--button-hover-bg);
+    border-color: var(--accent-color);
+}
+
+.missions-container {
+    max-height: 150px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.mission-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin-bottom: 6px;
+    background: var(--sidebar-bg);
+}
+
+.mission-title {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.mission-meta {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.mission-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.mission-action-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--button-bg);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: all 0.2s ease;
+}
+
+.load-btn:hover {
+    background: var(--info-color);
+    border-color: var(--info-color);
+    color: white;
+}
+
+.delete-btn:hover {
+    background: var(--error-color);
+    border-color: var(--error-color);
+    color: white;
+}
+
+.mission-file-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.file-btn {
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--button-bg);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 11px;
+    transition: all 0.2s ease;
+}
+
+.file-btn:hover {
+    background: var(--button-hover-bg);
+    border-color: var(--accent-color);
+}
+
+/* Scrollbar styling */
+.mission-content::-webkit-scrollbar,
+.waypoints-list::-webkit-scrollbar,
+.missions-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.mission-content::-webkit-scrollbar-track,
+.waypoints-list::-webkit-scrollbar-track,
+.missions-container::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+
+.mission-content::-webkit-scrollbar-thumb,
+.waypoints-list::-webkit-scrollbar-thumb,
+.missions-container::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+}
+
+/* Responsive adjustments for extended mode */
+@media (max-width: 1200px) {
+    .sidebar.expanded.track-mission-extended .mission-content {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .sidebar.expanded.track-mission-extended .mission-table-container {
+        grid-column: 1;
+    }
+} 

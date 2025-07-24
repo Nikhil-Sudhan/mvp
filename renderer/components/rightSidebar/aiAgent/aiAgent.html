@@ -1,0 +1,114 @@
+<div class="ai-agent-panel">
+    <!-- Model Selection Header -->
+    <div class="model-selection-header">
+        <div class="model-selector">
+            <div class="model-option active" data-model="online">
+                <div class="model-icon">
+                    <i class="fas fa-cloud"></i>
+                </div>
+                <div class="model-info">
+                    <span class="model-name">Online</span>
+                    <span class="model-desc">Fast & Accurate</span>
+                </div>
+            </div>
+            <div class="model-option" data-model="offline">
+                <div class="model-icon">
+                    <i class="fas fa-desktop"></i>
+                </div>
+                <div class="model-info">
+                    <span class="model-name">Offline</span>
+                    <span class="model-desc">Slow & Less Accurate</span>
+                </div>
+            </div>
+        </div>
+        <div class="model-status">
+            <div class="status-indicator online"></div>
+            <span id="model-status-text">Online Model Ready</span>
+        </div>
+    </div>
+
+    <!-- Waypoint Management -->
+    <div class="waypoint-section">
+        <div class="section-header">
+            <h4><i class="fas fa-map-marker-alt"></i> Waypoints</h4>
+        </div>
+        <div class="waypoint-list" id="waypoint-list">
+            <div class="waypoint-item sample" style="display: none;">
+                <div class="waypoint-info">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span class="waypoint-name"></span>
+                </div>
+                <div class="waypoint-actions">
+                    <button class="waypoint-action" title="Zoom to waypoint">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="waypoint-action delete" title="Delete waypoint">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="empty-waypoints" id="empty-waypoints">
+            <i class="fas fa-map-marker-alt"></i>
+            <p>No waypoints created yet</p>
+            <p class="hint">Use the drawing tools on the map to create waypoints</p>
+        </div>
+    </div>
+
+    <!-- Chat Interface -->
+    <div class="chat-container">
+        <div class="chat-messages" id="ai-chat-messages">
+            <div class="message ai-message">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <div class="message-text">
+                        <p>Hello! I'm your AI assistant for drone operations.</p>
+                        <p>You can reference waypoints by typing <code>@waypoint-name</code> in your messages.</p>
+                        <p>Use the drawing tools on the map to create new waypoints!</p>
+                    </div>
+                    <div class="message-time">Just now</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typing-indicator" style="display: none;">
+            <div class="message ai-message">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <div class="input-wrapper">
+                <div class="autocomplete-dropdown" id="autocomplete-dropdown" style="display: none;"></div>
+                <input type="text" class="chat-input" placeholder="Type @ to reference waypoints..." id="ai-chat-input">
+                <button class="send-btn" id="ai-send-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Polygon Save Modal -->
+    <div class="polygon-modal" id="polygon-modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Save Waypoint</h3>
+            <p>Give your polygon waypoint a name:</p>
+            <input type="text" class="waypoint-name-input" id="waypoint-name-input" placeholder="e.g., home, landing-zone, survey-area">
+            <div class="modal-actions">
+                <button class="btn secondary" id="cancel-waypoint">Cancel</button>
+                <button class="btn primary" id="save-waypoint">Save Waypoint</button>
+            </div>
+        </div>
+    </div>
+</div> 

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sky Loom - Drone Control IDE</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="components/common/sidebar.css">
+    <link rel="stylesheet" href="components/rightSidebar/aiAgent/aiAgent.css">
+    <link rel="stylesheet" href="components/rightSidebar/aiAgent/drawingTools.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Title Bar -->
+    <div class="title-bar">
+        <div class="title-bar-left">
+            <div class="app-name">
+                <i class="fas fa-drone"></i>
+                <span>Sky Loom</span>
+            </div>
+        </div>
+        
+        <div class="title-bar-center">
+            <div class="command-palette">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search commands and files..." id="commandInput">
+            </div>
+        </div>
+        
+        <div class="title-bar-right">
+            <div class="title-bar-controls">
+                <div class="control-group">
+                    <button class="title-btn" title="Git">
+                        <i class="fab fa-git-alt"></i>
+                    </button>
+                    <button class="title-btn" title="Extensions">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                    <button class="title-btn" title="Remote">
+                        <i class="fas fa-cloud"></i>
+                    </button>
+                    <button class="title-btn" title="Accounts">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <button class="title-btn" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize-btn" id="minimizeBtn">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="window-btn maximize-btn" id="maximizeBtn">
+                        <i class="far fa-square"></i>
+                    </button>
+                    <button class="window-btn close-btn" id="closeBtn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebars will be dynamically created by the sidebar manager -->
+        
+        <!-- Center Content -->
+        <div class="center-content">
+            <div id="cesiumContainer" class="cesium-container">
+                <!-- Cesium map will be initialized here -->
+            </div>
+            <div class="map-controls">
+                <div class="control-panel">
+                    <div class="control-group">
+                        <button class="map-btn" id="homeBtn" title="Home View">
+                            <i class="fas fa-home"></i>
+                        </button>
+                        <button class="map-btn" id="layersBtn" title="Toggle Layers">
+                            <i class="fas fa-layers"></i>
+                        </button>
+                        <button class="map-btn" id="measureBtn" title="Measure Distance">
+                            <i class="fas fa-ruler"></i>
+                        </button>
+                        <button class="map-btn" id="fullscreenBtn" title="Fullscreen">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                    <!-- Drawing Tools Group -->
+                    <div class="control-group drawing-tools-group">
+                        <button class="map-btn draw-tool-btn" id="polygonTool" data-tool="polygon" title="Draw Polygon">
+                            <i class="fas fa-draw-polygon"></i>
+                        </button>
+                        <button class="map-btn draw-tool-btn" id="squareTool" data-tool="square" title="Draw Square">
+                            <i class="fas fa-square"></i>
+                        </button>
+                        <button class="map-btn draw-tool-btn" id="circleTool" data-tool="circle" title="Draw Circle">
+                            <i class="fas fa-circle"></i>
+                        </button>
+                        <button class="map-btn draw-tool-btn erase-btn" id="eraseTool" data-tool="erase" title="Erase">
+                            <i class="fas fa-eraser"></i>
+                        </button>
+                        <button class="map-btn clear-all-btn" id="clearAllTool" title="Clear All">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Status Bar -->
+    <div class="status-bar">
+        <div class="status-left">
+            <div class="status-item">
+                <i class="fas fa-wifi status-connected"></i>
+                <span>Connected</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-battery-full"></i>
+                <span>Battery: 100%</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-satellite-dish"></i>
+                <span>GPS: Ready</span>
+            </div>
+        </div>
+        
+        <div class="status-center">
+            <div class="status-item">
+                <span>Status: Ready for Flight</span>
+            </div>
+        </div>
+        
+        <div class="status-right">
+            <div class="status-item">
+                <i class="fas fa-thermometer-half"></i>
+                <span>Temp: 25°C</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Altitude: 0m</span>
+            </div>
+            <div class="status-item">
+                <span>Sky Loom v1.0.0</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="components/common/sidebarManager.js"></script>
+    <script src="components/rightSidebar/aiAgent/waypointStorage.js"></script>
+    <script src="components/rightSidebar/aiAgent/drawingTools.js"></script>
+    <script src="components/rightSidebar/aiAgent/aiAgent.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 

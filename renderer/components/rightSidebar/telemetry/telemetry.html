@@ -1,0 +1,154 @@
+<div class="telemetry-panel">
+    <div class="panel-header">
+        <h3><i class="fas fa-chart-line"></i> Telemetry</h3>
+        <div class="telemetry-controls">
+            <button class="control-btn" id="telemetry-record" title="Record Data">
+                <i class="fas fa-record-vinyl"></i>
+            </button>
+            <button class="control-btn" id="telemetry-pause" title="Pause Recording">
+                <i class="fas fa-pause"></i>
+            </button>
+            <button class="control-btn" id="telemetry-clear" title="Clear Data">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+    <div class="telemetry-content">
+        <div class="telemetry-section">
+            <h4><i class="fas fa-tachometer-alt"></i> Flight Data</h4>
+            <div class="data-grid">
+                <div class="data-item">
+                    <div class="data-label">Altitude</div>
+                    <div class="data-value" id="telem-altitude">0.0m</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">Speed</div>
+                    <div class="data-value" id="telem-speed">0.0 m/s</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">Heading</div>
+                    <div class="data-value" id="telem-heading">0°</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">Vertical Speed</div>
+                    <div class="data-value" id="telem-vertical-speed">0.0 m/s</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="telemetry-section">
+            <h4><i class="fas fa-map-marker-alt"></i> Position</h4>
+            <div class="position-info">
+                <div class="coord-item">
+                    <span class="coord-label">Latitude:</span>
+                    <span class="coord-value" id="telem-lat">---.------</span>
+                </div>
+                <div class="coord-item">
+                    <span class="coord-label">Longitude:</span>
+                    <span class="coord-value" id="telem-lon">---.------</span>
+                </div>
+                <div class="coord-item">
+                    <span class="coord-label">GPS Satellites:</span>
+                    <span class="coord-value" id="telem-sats">0</span>
+                </div>
+                <div class="coord-item">
+                    <span class="coord-label">HDOP:</span>
+                    <span class="coord-value" id="telem-hdop">--.--</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="telemetry-section">
+            <h4><i class="fas fa-thermometer-half"></i> System Status</h4>
+            <div class="system-grid">
+                <div class="system-item">
+                    <div class="system-icon">
+                        <i class="fas fa-battery-three-quarters"></i>
+                    </div>
+                    <div class="system-info">
+                        <div class="system-label">Battery</div>
+                        <div class="system-value" id="telem-battery">100%</div>
+                        <div class="system-bar">
+                            <div class="bar-fill" id="battery-bar" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="system-item">
+                    <div class="system-icon">
+                        <i class="fas fa-wifi"></i>
+                    </div>
+                    <div class="system-info">
+                        <div class="system-label">Signal</div>
+                        <div class="system-value" id="telem-signal">Strong</div>
+                        <div class="system-bar">
+                            <div class="bar-fill signal" id="signal-bar" style="width: 90%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="system-item">
+                    <div class="system-icon">
+                        <i class="fas fa-thermometer-half"></i>
+                    </div>
+                    <div class="system-info">
+                        <div class="system-label">Temperature</div>
+                        <div class="system-value" id="telem-temp">25°C</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="telemetry-section">
+            <h4><i class="fas fa-chart-area"></i> Real-time Charts</h4>
+            <div class="chart-container">
+                <canvas id="altitude-chart" width="300" height="120"></canvas>
+            </div>
+            <div class="chart-selector">
+                <button class="chart-btn active" data-chart="altitude">
+                    <i class="fas fa-mountain"></i>
+                    Altitude
+                </button>
+                <button class="chart-btn" data-chart="speed">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Speed
+                </button>
+                <button class="chart-btn" data-chart="battery">
+                    <i class="fas fa-battery-half"></i>
+                    Battery
+                </button>
+            </div>
+        </div>
+
+        <div class="telemetry-section">
+            <h4><i class="fas fa-exclamation-triangle"></i> Alerts & Warnings</h4>
+            <div class="alerts-container" id="alerts-container">
+                <div class="alert-item info">
+                    <div class="alert-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">System Ready</div>
+                        <div class="alert-time">2 min ago</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="telemetry-section">
+            <h4><i class="fas fa-download"></i> Data Export</h4>
+            <div class="export-options">
+                <button class="export-btn" id="export-csv">
+                    <i class="fas fa-file-csv"></i>
+                    Export CSV
+                </button>
+                <button class="export-btn" id="export-json">
+                    <i class="fas fa-file-code"></i>
+                    Export JSON
+                </button>
+                <button class="export-btn" id="export-log">
+                    <i class="fas fa-file-alt"></i>
+                    Flight Log
+                </button>
+            </div>
+        </div>
+    </div>
+</div> 

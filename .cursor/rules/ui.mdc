@@ -1,0 +1,8 @@
+---
+alwaysApply: false
+---
+your building a windows desktop and linux application using react and electron. 
+
+i dont want to have multiple files for the UI. Divide the code into differnt files accroding to the pages.
+dont give options to the user to change the UI.
+dont give the unnacessary options to the user.
