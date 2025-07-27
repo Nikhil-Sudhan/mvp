@@ -10,6 +10,7 @@ function init() {
     setupCommandPalette();
     setupCesiumMap();
     setupStatusBarUpdates();
+    setupMissionControls(); // Add this line
     
     // Wait for sidebar manager to be ready, then set initial state
     setTimeout(() => {
@@ -18,6 +19,9 @@ function init() {
             window.sidebarManager.toggleLeftSidebar('dashboard');
             window.sidebarManager.toggleRightSidebar('telemetry');
         }
+        
+        // Set up mission data file watcher after map is initialized
+        watchMissionDataChanges();
     }, 100);
 }
 
@@ -330,7 +334,7 @@ async function loadMissionData() {
 async function addMissionEntities() {
     if (!viewer) return;
 
-    console.log('Adding mission entities...');
+    console.log('Adding drone entity only...');
 
     try {
         // Load mission data from JSON
@@ -342,7 +346,7 @@ async function addMissionEntities() {
 
         const mission = missionData.mission;
 
-        // Add drone from JSON data
+        // Add only the drone from JSON data
         const droneEntity = viewer.entities.add({
             id: 'mainDrone',
             position: Cesium.Cartesian3.fromDegrees(
@@ -379,87 +383,8 @@ async function addMissionEntities() {
             }
         });
 
-        // Create flight path positions from JSON waypoints
-        const flightPathPositions = [
-            mission.drone.longitude, mission.drone.latitude, mission.drone.altitude,
-            ...mission.waypoints.flatMap(wp => [wp.longitude, wp.latitude, wp.altitude])
-        ];
-
-        // Add flight path from JSON data
-        const flightPath = viewer.entities.add({
-            id: 'flightPath',
-            polyline: {
-                positions: Cesium.Cartesian3.fromDegreesArrayHeights(flightPathPositions),
-                width: mission.flightPath.width,
-                clampToGround: false,
-                material: new Cesium.PolylineGlowMaterialProperty({
-                    glowPower: mission.flightPath.glowPower,
-                    color: Cesium.Color[mission.flightPath.color]
-                })
-            }
-        });
-
-        // Add waypoints from JSON data
-        mission.waypoints.forEach((waypoint) => {
-            viewer.entities.add({
-                id: waypoint.id,
-                position: Cesium.Cartesian3.fromDegrees(
-                    waypoint.longitude, 
-                    waypoint.latitude, 
-                    waypoint.altitude
-                ),
-                point: {
-                    pixelSize: 12,
-                    color: Cesium.Color.ORANGE,
-                    outlineColor: Cesium.Color.WHITE,
-                    outlineWidth: 2,
-                    heightReference: Cesium.HeightReference.NONE
-                },
-                label: {
-                    text: `${waypoint.name}\n${waypoint.description}`,
-                    font: '12pt sans-serif',
-                    pixelOffset: new Cesium.Cartesian2(0, -40),
-                    fillColor: Cesium.Color.WHITE,
-                    outlineColor: Cesium.Color.BLACK,
-                    outlineWidth: 1,
-                    style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-                    heightReference: Cesium.HeightReference.NONE
-                }
-            });
-        });
-
-        // Add home base from JSON data
-        viewer.entities.add({
-            id: 'homeBase',
-            position: Cesium.Cartesian3.fromDegrees(
-                mission.homeBase.longitude, 
-                mission.homeBase.latitude, 
-                mission.homeBase.altitude
-            ),
-            cylinder: {
-                length: 20,
-                topRadius: 100,
-                bottomRadius: 100,
-                material: Cesium.Color.GREEN.withAlpha(0.8),
-                outline: true,
-                outlineColor: Cesium.Color.DARKGREEN,
-                outlineWidth: 3,
-                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
-            },
-            label: {
-                text: `${mission.homeBase.name}\n${mission.homeBase.description}`,
-                font: '12pt sans-serif',
-                pixelOffset: new Cesium.Cartesian2(0, -120),
-                fillColor: Cesium.Color.GREEN,
-                outlineColor: Cesium.Color.BLACK,
-                outlineWidth: 2,
-                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-                heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
-            }
-        });
-
-        console.log('Mission entities added successfully');
-        showNotification(`Mission loaded: ${mission.name}`, 'success');
+        console.log('Drone entity added successfully');
+        showNotification(`Drone loaded: ${mission.drone.name}`, 'success');
         
         // Fly to the drone location with 3D perspective after a short delay
         setTimeout(() => {
@@ -474,8 +399,8 @@ async function addMissionEntities() {
         }, 2000);
 
     } catch (error) {
-        console.error('Error adding mission entities:', error);
-        showNotification('Some mission features may not be visible', 'warning');
+        console.error('Error adding drone entity:', error);
+        showNotification('Drone may not be visible', 'warning');
     }
 }
 
@@ -663,32 +588,68 @@ function addFlightPath(positions, color = Cesium.Color.CYAN) {
     });
 }
 
-// Function to display 3D model drones
-function displayDrones() {
-    const droneModels = Object.values(DRONE_MODELS);
-    droneModels.forEach(async (model) => {
+// Add this function to watch for JSON file changes
+async function watchMissionDataChanges() {
+    if (!viewer) return;
+    
+    console.log('Setting up mission data file watcher...');
+    
+    // Function to reload mission data and update map
+    async function reloadMissionData() {
         try {
-            console.log(`Loading drone model with Asset ID: ${model.ionAssetId}`);
-            const tileset = await viewer.scene.primitives.add(
-                await Cesium.Cesium3DTileset.fromIonAssetId(model.ionAssetId)
-            );
-            tileset.style = new Cesium.Cesium3DTileStyle({
-                color: 'color("white")',
-                show: true
+            console.log('Reloading mission data from JSON...');
+            
+            // Remove all existing mission entities
+            const entitiesToRemove = [];
+            viewer.entities.values.forEach(entity => {
+                if (entity.id === 'mainDrone' || entity.id === 'flightPath' || 
+                    entity.id === 'homeBase' || entity.id.startsWith('waypoint_')) {
+                    entitiesToRemove.push(entity);
+                }
             });
-            tileset.scale = model.scale;
-            tileset.minimumPixelSize = model.minimumPixelSize;
-            console.log('Drone model loaded successfully');
-            showNotification('Drone model loaded', 'success');
+            
+            entitiesToRemove.forEach(entity => {
+                viewer.entities.remove(entity);
+            });
+            
+            console.log(`Removed ${entitiesToRemove.length} existing entities`);
+            
+            // Reload and add new entities
+            await addMissionEntities();
+            
+            showNotification('Mission data updated from JSON file', 'success');
         } catch (error) {
-            console.error('Failed to load drone model:', error);
-            showNotification('Drone model failed to load', 'warning');
+            console.error('Error reloading mission data:', error);
+            showNotification('Failed to reload mission data', 'error');
+        }
+    }
+    
+    // Set up file watcher using Electron's fs module
+    const fs = require('fs');
+    const path = require('path');
+    
+    const missionDataPath = path.join(__dirname, 'mission-data.json');
+    
+    // Watch for changes in the mission-data.json file
+    fs.watchFile(missionDataPath, { interval: 1000 }, (curr, prev) => {
+        if (curr.mtime > prev.mtime) {
+            console.log('Mission data file changed, reloading...');
+            reloadMissionData();
         }
     });
+    
+    console.log('Mission data file watcher set up successfully');
 }
 
-// Attach event listener to the test button
-document.getElementById('testDronesBtn').addEventListener('click', displayDrones);
+// Also add a manual reload function that can be called from the UI
+function reloadMissionDataFromFile() {
+    if (window.viewer) {
+        watchMissionDataChanges();
+    }
+}
+
+// Make it globally available
+window.reloadMissionDataFromFile = reloadMissionDataFromFile;
 
 // Handle window focus for development
 window.addEventListener('focus', () => {
@@ -714,4 +675,62 @@ if (process.env.NODE_ENV === 'development') {
         executeCommand: executeCommand,
         simulateData: updateTelemetryData
     };
+} 
+
+// Add this function after the other setup functions
+function setupMissionControls() {
+    console.log('Setting up mission controls...');
+    
+    // Add reload button event listener if it exists
+    const reloadMissionBtn = document.getElementById('reloadMissionBtn');
+    if (reloadMissionBtn) {
+        reloadMissionBtn.addEventListener('click', async () => {
+            console.log('Manual reload button clicked');
+            await reloadMissionDataFromFile();
+        });
+    }
+    
+    // Add a keyboard shortcut for reloading (Ctrl+R)
+    document.addEventListener('keydown', async (e) => {
+        if (e.ctrlKey && e.key === 'r') {
+            e.preventDefault();
+            console.log('Ctrl+R pressed, reloading mission data');
+            await reloadMissionDataFromFile();
+        }
+    });
+}
+
+// Fix the reloadMissionDataFromFile function
+async function reloadMissionDataFromFile() {
+    if (!window.viewer) {
+        console.error('Cesium viewer not available');
+        return;
+    }
+    
+    try {
+        console.log('Manual reload triggered...');
+        
+        // Remove all existing mission entities
+        const entitiesToRemove = [];
+        window.viewer.entities.values.forEach(entity => {
+            if (entity.id === 'mainDrone' || entity.id === 'flightPath' || 
+                entity.id === 'homeBase' || entity.id.startsWith('waypoint_')) {
+                entitiesToRemove.push(entity);
+            }
+        });
+        
+        entitiesToRemove.forEach(entity => {
+            window.viewer.entities.remove(entity);
+        });
+        
+        console.log(`Removed ${entitiesToRemove.length} existing entities`);
+        
+        // Reload and add new entities
+        await addMissionEntities();
+        
+        showNotification('Mission data reloaded manually', 'success');
+    } catch (error) {
+        console.error('Error manually reloading mission data:', error);
+        showNotification('Failed to reload mission data', 'error');
+    }
 } 
