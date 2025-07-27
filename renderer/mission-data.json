@@ -1,51 +1,51 @@
-{
-  "mission": {
-    "name": "Sky Loom Remote Mission",
-    "location": "Remote Location",
-    "homeBase": {
-      "longitude": 77.7243,
-      "latitude": 9.6212,
-      "altitude": 0,
-      "name": "REMOTE BASE",
-      "description": "Remote Landing Pad"
-    },
-    "drone": {
-      "longitude": 77.7243,
-      "latitude": 9.6212,
-      "altitude": 150,
-      "name": "Sky Loom Remote Drone",
-      "description": "Altitude: 150m - Remote Mission"
-    },
-    "waypoints": [
-      {
-        "id": "waypoint_1",
-        "name": "Remote Point 1",
-        "longitude": 77.7343,
-        "latitude": 9.6312,
-        "altitude": 250,
-        "description": "First remote checkpoint"
-      },
-      {
-        "id": "waypoint_2",
-        "name": "Remote Point 2",
-        "longitude": 77.7443,
-        "latitude": 9.6412,
-        "altitude": 300,
-        "description": "Second remote checkpoint"
-      },
-      {
-        "id": "waypoint_3",
-        "name": "Remote Point 3",
-        "longitude": 77.7543,
-        "latitude": 9.6512,
-        "altitude": 200,
-        "description": "Third remote checkpoint"
-      }
-    ],
-    "flightPath": {
-      "width": 4,
-      "color": "YELLOW",
-      "glowPower": 0.4
-    }
-  }
-} 
+// {
+//   "mission": {
+//     "name": "Sky Loom Remote Mission",
+//     "location": "Remote Location",
+//     "homeBase": {
+//       "longitude": 77.7243,
+//       "latitude": 9.6212,
+//       "altitude": 0,
+//       "name": "REMOTE BASE",
+//       "description": "Remote Landing Pad"
+//     },
+//     "drone": {
+//       "longitude": 77.7243,
+//       "latitude": 9.6212,
+//       "altitude": 150,
+//       "name": "Sky Loom Remote Drone",
+//       "description": "Altitude: 150m - Remote Mission"
+//     },
+//     "waypoints": [
+//       {
+//         "id": "waypoint_1",
+//         "name": "Remote Point 1",
+//         "longitude": 77.7343,
+//         "latitude": 9.6312,
+//         "altitude": 250,
+//         "description": "First remote checkpoint"
+//       },
+//       {
+//         "id": "waypoint_2",
+//         "name": "Remote Point 2",
+//         "longitude": 77.7443,
+//         "latitude": 9.6412,
+//         "altitude": 300,
+//         "description": "Second remote checkpoint"
+//       },
+//       {
+//         "id": "waypoint_3",
+//         "name": "Remote Point 3",
+//         "longitude": 77.7543,
+//         "latitude": 9.6512,
+//         "altitude": 200,
+//         "description": "Third remote checkpoint"
+//       }
+//     ],
+//     "flightPath": {
+//       "width": 4,
+//       "color": "YELLOW",
+//       "glowPower": 0.4
+//     }
+//   }
+// } 

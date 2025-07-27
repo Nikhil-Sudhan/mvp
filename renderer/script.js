@@ -22,6 +22,11 @@ function init() {
         
         // Set up mission data file watcher after map is initialized
         watchMissionDataChanges();
+        
+        // Initialize WebSocket drone simulation after map is ready
+        setTimeout(() => {
+            initializeWebSocketDrone();
+        }, 2000);
     }, 100);
 }
 
@@ -110,6 +115,12 @@ function executeCommand(command) {
         executeDroneFunction('hover');
     } else if (lowerCommand.includes('return')) {
         executeDroneFunction('return');
+    } else if (lowerCommand.includes('websocket drone') || lowerCommand.includes('start drone')) {
+        initializeWebSocketDrone();
+    } else if (lowerCommand.includes('disconnect drone') || lowerCommand.includes('stop drone')) {
+        disconnectWebSocketDrone();
+    } else if (lowerCommand.includes('reset drone')) {
+        resetDronePosition();
     } else {
         // Show a notification for unrecognized commands
         showNotification(`Command "${command}" not recognized. Try "dashboard", "mission", "help", etc.`, 'warning');
@@ -320,7 +331,9 @@ async function setupCesiumMap() {
 async function loadMissionData() {
     try {
         console.log('Loading mission data from JSON...');
-        const response = await fetch('./mission-data.json');
+        // Use more robust path resolution for Electron
+        const missionDataUrl = new URL('mission-data.json', window.location.href).href;
+        const response = await fetch(missionDataUrl);
         const missionData = await response.json();
         console.log('Mission data loaded successfully:', missionData);
         return missionData;
@@ -334,7 +347,7 @@ async function loadMissionData() {
 async function addMissionEntities() {
     if (!viewer) return;
 
-    console.log('Adding drone entity only...');
+    console.log('Adding drone and waypoint entities...');
 
     try {
         // Load mission data from JSON
@@ -346,7 +359,7 @@ async function addMissionEntities() {
 
         const mission = missionData.mission;
 
-        // Add only the drone from JSON data
+        // Add the drone from JSON data
         const droneEntity = viewer.entities.add({
             id: 'mainDrone',
             position: Cesium.Cartesian3.fromDegrees(
@@ -384,6 +397,109 @@ async function addMissionEntities() {
         });
 
         console.log('Drone entity added successfully');
+
+        // Add waypoints from mission data
+        if (mission.waypoints && mission.waypoints.length > 0) {
+            console.log(`Adding ${mission.waypoints.length} waypoints...`);
+            
+            const waypointEntities = [];
+            const waypointPositions = [];
+
+            // Add each waypoint
+            mission.waypoints.forEach((waypoint, index) => {
+                const position = Cesium.Cartesian3.fromDegrees(
+                    waypoint.longitude,
+                    waypoint.latitude,
+                    waypoint.altitude
+                );
+                
+                waypointPositions.push(position);
+                
+                const waypointEntity = viewer.entities.add({
+                    id: waypoint.id,
+                    position: position,
+                    point: {
+                        pixelSize: 12,
+                        color: Cesium.Color.CYAN,
+                        outlineColor: Cesium.Color.BLACK,
+                        outlineWidth: 2,
+                        heightReference: Cesium.HeightReference.NONE
+                    },
+                    label: {
+                        text: `${waypoint.name}\n${waypoint.altitude}m`,
+                        font: '12pt sans-serif',
+                        pixelOffset: new Cesium.Cartesian2(0, -40),
+                        fillColor: Cesium.Color.CYAN,
+                        outlineColor: Cesium.Color.BLACK,
+                        outlineWidth: 1,
+                        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                        scale: 0.8,
+                        heightReference: Cesium.HeightReference.NONE
+                    }
+                });
+                
+                waypointEntities.push(waypointEntity);
+                console.log(`Waypoint ${waypoint.name} added at position ${waypoint.longitude}, ${waypoint.latitude}, ${waypoint.altitude}`);
+            });
+
+            // Create connecting lines between waypoints
+            if (waypointPositions.length > 1) {
+                // Add line from drone to first waypoint
+                const droneToFirstWaypoint = viewer.entities.add({
+                    id: 'flightPath_droneToFirst',
+                    polyline: {
+                        positions: [
+                            Cesium.Cartesian3.fromDegrees(
+                                mission.drone.longitude,
+                                mission.drone.latitude,
+                                mission.drone.altitude
+                            ),
+                            waypointPositions[0]
+                        ],
+                        width: 3,
+                        material: Cesium.Color.ORANGE,
+                        clampToGround: false
+                    }
+                });
+
+                // Add lines connecting all waypoints
+                for (let i = 0; i < waypointPositions.length - 1; i++) {
+                    const flightPathEntity = viewer.entities.add({
+                        id: `flightPath_segment_${i}`,
+                        polyline: {
+                            positions: [waypointPositions[i], waypointPositions[i + 1]],
+                            width: 3,
+                            material: Cesium.Color.YELLOW,
+                            clampToGround: false
+                        }
+                    });
+                    console.log(`Flight path line added between waypoint ${i + 1} and ${i + 2}`);
+                }
+
+                // Add return line from last waypoint to drone
+                const lastWaypointToDrone = viewer.entities.add({
+                    id: 'flightPath_lastToDrone',
+                    polyline: {
+                        positions: [
+                            waypointPositions[waypointPositions.length - 1],
+                            Cesium.Cartesian3.fromDegrees(
+                                mission.drone.longitude,
+                                mission.drone.latitude,
+                                mission.drone.altitude
+                            )
+                        ],
+                        width: 3,
+                        material: Cesium.Color.RED,
+                        clampToGround: false
+                    }
+                });
+
+                console.log('Flight path lines added successfully');
+            }
+
+            showNotification(`${mission.waypoints.length} waypoints and flight paths added`, 'success');
+        }
+
         showNotification(`Drone loaded: ${mission.drone.name}`, 'success');
         
         // Fly to the drone location with 3D perspective after a short delay
@@ -399,8 +515,8 @@ async function addMissionEntities() {
         }, 2000);
 
     } catch (error) {
-        console.error('Error adding drone entity:', error);
-        showNotification('Drone may not be visible', 'warning');
+        console.error('Error adding mission entities:', error);
+        showNotification('Mission entities may not be visible', 'warning');
     }
 }
 
@@ -603,7 +719,8 @@ async function watchMissionDataChanges() {
             const entitiesToRemove = [];
             viewer.entities.values.forEach(entity => {
                 if (entity.id === 'mainDrone' || entity.id === 'flightPath' || 
-                    entity.id === 'homeBase' || entity.id.startsWith('waypoint_')) {
+                    entity.id === 'homeBase' || entity.id.startsWith('waypoint_') ||
+                    entity.id.startsWith('flightPath_')) {
                     entitiesToRemove.push(entity);
                 }
             });
@@ -628,28 +745,38 @@ async function watchMissionDataChanges() {
     const fs = require('fs');
     const path = require('path');
     
-    const missionDataPath = path.join(__dirname, 'mission-data.json');
-    
-    // Watch for changes in the mission-data.json file
-    fs.watchFile(missionDataPath, { interval: 1000 }, (curr, prev) => {
-        if (curr.mtime > prev.mtime) {
-            console.log('Mission data file changed, reloading...');
-            reloadMissionData();
+    // More robust path resolution for the mission data file
+    let missionDataPath;
+    try {
+        // Try different path resolution methods
+        const rendererDir = __dirname;
+        missionDataPath = path.join(rendererDir, 'mission-data.json');
+        
+        // Verify the file exists
+        if (!fs.existsSync(missionDataPath)) {
+            // Fallback to process.cwd() if __dirname doesn't work
+            missionDataPath = path.join(process.cwd(), 'renderer', 'mission-data.json');
+            if (!fs.existsSync(missionDataPath)) {
+                throw new Error('Mission data file not found in expected locations');
+            }
         }
-    });
-    
-    console.log('Mission data file watcher set up successfully');
-}
-
-// Also add a manual reload function that can be called from the UI
-function reloadMissionDataFromFile() {
-    if (window.viewer) {
-        watchMissionDataChanges();
+        
+        console.log('Mission data file path resolved to:', missionDataPath);
+        
+        // Watch for changes in the mission-data.json file
+        fs.watchFile(missionDataPath, { interval: 1000 }, (curr, prev) => {
+            if (curr.mtime > prev.mtime) {
+                console.log('Mission data file changed, reloading...');
+                reloadMissionData();
+            }
+        });
+        
+        console.log('Mission data file watcher set up successfully');
+    } catch (error) {
+        console.error('Failed to set up file watcher:', error);
+        showNotification('File watcher setup failed - manual reload may be needed', 'warning');
     }
 }
-
-// Make it globally available
-window.reloadMissionDataFromFile = reloadMissionDataFromFile;
 
 // Handle window focus for development
 window.addEventListener('focus', () => {
@@ -700,21 +827,24 @@ function setupMissionControls() {
     });
 }
 
-// Fix the reloadMissionDataFromFile function
+// Manual reload function that can be called from the UI or keyboard shortcut
 async function reloadMissionDataFromFile() {
     if (!window.viewer) {
         console.error('Cesium viewer not available');
+        showNotification('Map not ready for reload', 'error');
         return;
     }
     
     try {
         console.log('Manual reload triggered...');
+        showNotification('Reloading mission data...', 'info');
         
         // Remove all existing mission entities
         const entitiesToRemove = [];
         window.viewer.entities.values.forEach(entity => {
             if (entity.id === 'mainDrone' || entity.id === 'flightPath' || 
-                entity.id === 'homeBase' || entity.id.startsWith('waypoint_')) {
+                entity.id === 'homeBase' || entity.id.startsWith('waypoint_') ||
+                entity.id.startsWith('flightPath_')) {
                 entitiesToRemove.push(entity);
             }
         });
@@ -733,4 +863,369 @@ async function reloadMissionDataFromFile() {
         console.error('Error manually reloading mission data:', error);
         showNotification('Failed to reload mission data', 'error');
     }
-} 
+}
+
+// Make it globally available
+window.reloadMissionDataFromFile = reloadMissionDataFromFile; 
+
+let websocketDrone = null;
+let websocketConnection = null;
+let dronePosition = {
+    lat: 55.5,
+    lon: 22.2,
+    alt: 0
+};
+
+function initializeWebSocketDrone() {
+    console.log('Initializing WebSocket drone simulation...');
+    
+    if (!viewer) {
+        console.error('Cesium viewer not ready');
+        return;
+    }
+
+    // Create the initial drone entity
+    websocketDrone = viewer.entities.add({
+        id: 'websocketDrone',
+        position: Cesium.Cartesian3.fromDegrees(
+            dronePosition.lon,
+            dronePosition.lat,
+            dronePosition.alt
+        ),
+        box: {
+            dimensions: new Cesium.Cartesian3(50, 50, 15),
+            material: Cesium.Color.YELLOW.withAlpha(0.9),
+            outline: true,
+            outlineColor: Cesium.Color.BLACK,
+            heightReference: Cesium.HeightReference.NONE
+        },
+        label: {
+            text: 'Drone 1',
+            font: '16pt sans-serif',
+            pixelOffset: new Cesium.Cartesian2(0, -90),
+            fillColor: Cesium.Color.WHITE,
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 2,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            scale: 1.2,
+            heightReference: Cesium.HeightReference.NONE
+        }
+    });
+
+    console.log(`WebSocket drone initialized at position: ${dronePosition.lat}, ${dronePosition.lon}, ${dronePosition.alt}`);
+    
+    // Fly to the drone
+    setTimeout(() => {
+        viewer.flyTo(websocketDrone, {
+            duration: 3.0,
+            offset: new Cesium.HeadingPitchRange(
+                Cesium.Math.toRadians(0),
+                Cesium.Math.toRadians(-45),
+                2000
+            )
+        });
+    }, 1000);
+
+    // Connect to WebSocket
+    connectWebSocket();
+    
+    // Create debug info display
+    createDebugDisplay();
+}
+
+function connectWebSocket() {
+    try {
+        console.log('Connecting to WebSocket at ws://localhost:8000/ws...');
+        
+        websocketConnection = new WebSocket('ws://localhost:8000/ws');
+        
+        websocketConnection.onopen = function(event) {
+            console.log('WebSocket connection established');
+            showNotification('WebSocket connected to drone server', 'success');
+            updateDebugDisplay('WebSocket Status', 'Connected', 'success');
+        };
+        
+        websocketConnection.onmessage = function(event) {
+            try {
+                const droneData = JSON.parse(event.data);
+                console.log('🔄 Received drone data:', droneData);
+                
+                // Validate the expected data format
+                if (!droneData.drone_status || !droneData.drone_status.current_position) {
+                    console.error('❌ Invalid drone data format - missing drone_status.current_position:', droneData);
+                    showNotification('Invalid drone data format received', 'warning');
+                    return;
+                }
+                
+                const currentPos = droneData.drone_status.current_position;
+                const deltaData = {
+                    lat: droneData.lat || 0,
+                    lon: droneData.lon || 0, 
+                    alt: droneData.alt || 0
+                };
+                
+                console.log('📍 Extracted position:', currentPos);
+                console.log('📊 Delta data:', deltaData);
+                
+                // Validate position data
+                if (typeof currentPos.lat !== 'number' || 
+                    typeof currentPos.lon !== 'number' || 
+                    typeof currentPos.alt !== 'number') {
+                    console.error('❌ Invalid position data format:', currentPos);
+                    showNotification('Invalid position coordinates received', 'error');
+                    return;
+                }
+                
+                // Check if position values are reasonable (not NaN or Infinity)
+                if (!isFinite(currentPos.lat) || !isFinite(currentPos.lon) || !isFinite(currentPos.alt)) {
+                    console.error('❌ Position contains invalid numbers:', currentPos);
+                    showNotification('Invalid position numbers received', 'error');
+                    return;
+                }
+                
+                console.log('✅ Data validation passed, updating drone position...');
+                updateDronePositionFromReal(currentPos, deltaData, droneData);
+                
+            } catch (error) {
+                console.error('❌ Error processing WebSocket message:', error);
+                console.error('Raw message:', event.data);
+                showNotification('Error processing drone data: ' + error.message, 'error');
+            }
+        };
+        
+        websocketConnection.onclose = function(event) {
+            console.log('WebSocket connection closed');
+            showNotification('WebSocket connection closed', 'warning');
+            updateDebugDisplay('WebSocket Status', 'Disconnected', 'error');
+            
+            // Attempt to reconnect after 3 seconds
+            setTimeout(() => {
+                if (!websocketConnection || websocketConnection.readyState === WebSocket.CLOSED) {
+                    console.log('Attempting to reconnect WebSocket...');
+                    connectWebSocket();
+                }
+            }, 3000);
+        };
+        
+        websocketConnection.onerror = function(error) {
+            console.error('WebSocket error:', error);
+            showNotification('WebSocket connection error', 'error');
+            updateDebugDisplay('WebSocket Status', 'Error', 'error');
+        };
+        
+    } catch (error) {
+        console.error('Failed to create WebSocket connection:', error);
+        showNotification('Failed to connect to drone WebSocket', 'error');
+    }
+}
+
+function updateDronePositionFromReal(currentPos, deltaData, fullDroneData) {
+    if (!websocketDrone) {
+        console.error('WebSocket drone entity not found');
+        return;
+    }
+    
+    // Store previous position for debugging
+    const beforePosition = { ...dronePosition };
+    
+    // Update to the actual current position from drone
+    dronePosition.lat = currentPos.lat;
+    dronePosition.lon = currentPos.lon;
+    dronePosition.alt = currentPos.alt;
+    
+    // Update the drone entity position
+    websocketDrone.position = Cesium.Cartesian3.fromDegrees(
+        dronePosition.lon,
+        dronePosition.lat, 
+        dronePosition.alt
+    );
+    
+    console.log('Real drone position updated:', {
+        before: beforePosition,
+        delta: deltaData,
+        after: { ...dronePosition },
+        droneStatus: fullDroneData.drone_status
+    });
+    
+    // Update debug display with real data
+    updateDebugDisplay('Before Position', 
+        `Lat: ${beforePosition.lat.toFixed(6)}, Lon: ${beforePosition.lon.toFixed(6)}, Alt: ${beforePosition.alt.toFixed(2)}m`);
+    updateDebugDisplay('Delta Received', 
+        `Lat: ${deltaData.lat.toFixed(6)}, Lon: ${deltaData.lon.toFixed(6)}, Alt: ${deltaData.alt.toFixed(2)}m`);
+    updateDebugDisplay('After Position', 
+        `Lat: ${dronePosition.lat.toFixed(6)}, Lon: ${dronePosition.lon.toFixed(6)}, Alt: ${dronePosition.alt.toFixed(2)}m`);
+    updateDebugDisplay('Drone Mode', 
+        `${fullDroneData.drone_status.mode} (Armed: ${fullDroneData.drone_status.armed})`);
+    updateDebugDisplay('Timestamp', 
+        `${new Date(fullDroneData.timestamp * 1000).toLocaleTimeString()}`);
+    
+    // Update status bar with current altitude and mode
+    updateStatusBar('right', `Alt: ${dronePosition.alt.toFixed(1)}m | ${fullDroneData.drone_status.mode}`);
+}
+
+function createDebugDisplay() {
+    // Create debug panel if it doesn't exist
+    let debugPanel = document.getElementById('droneDebugPanel');
+    if (!debugPanel) {
+        debugPanel = document.createElement('div');
+        debugPanel.id = 'droneDebugPanel';
+        debugPanel.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 320px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            z-index: 1000;
+            border: 1px solid #333;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        `;
+        
+        debugPanel.innerHTML = `
+            <div style="border-bottom: 1px solid #555; padding-bottom: 8px; margin-bottom: 10px;">
+                <strong>🚁 WebSocket Drone Debug</strong>
+                <button id="toggleDebugPanel" style="float: right; background: #333; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer;">×</button>
+            </div>
+            <div id="debugContent">
+                <div class="debug-row">
+                    <span class="debug-label">WebSocket Status:</span>
+                    <span class="debug-value">Connecting...</span>
+                </div>
+                <div class="debug-row">
+                    <span class="debug-label">Before Position:</span>
+                    <span class="debug-value">Lat: 55.500000, Lon: 22.200000, Alt: 0.00m</span>
+                </div>
+                <div class="debug-row">
+                    <span class="debug-label">Delta Received:</span>
+                    <span class="debug-value">Waiting for data...</span>
+                </div>
+                <div class="debug-row">
+                    <span class="debug-label">After Position:</span>
+                    <span class="debug-value">Lat: 55.500000, Lon: 22.200000, Alt: 0.00m</span>
+                </div>
+                <div class="debug-row">
+                    <span class="debug-label">Drone Mode:</span>
+                    <span class="debug-value">UNKNOWN (Armed: false)</span>
+                </div>
+                <div class="debug-row">
+                    <span class="debug-label">Timestamp:</span>
+                    <span class="debug-value">--:--:--</span>
+                </div>
+            </div>
+        `;
+        
+        // Add CSS for debug rows
+        const debugStyle = document.createElement('style');
+        debugStyle.textContent = `
+            .debug-row {
+                margin: 6px 0;
+                display: flex;
+                justify-content: space-between;
+            }
+            .debug-label {
+                color: #00aaff;
+                font-weight: bold;
+                min-width: 120px;
+            }
+            .debug-value {
+                color: #ffffff;
+                word-break: break-all;
+                text-align: right;
+                flex: 1;
+            }
+            .debug-value.success { color: #00ff00; }
+            .debug-value.error { color: #ff4444; }
+            .debug-value.warning { color: #ffaa00; }
+        `;
+        document.head.appendChild(debugStyle);
+        
+        document.body.appendChild(debugPanel);
+        
+        // Add toggle functionality
+        document.getElementById('toggleDebugPanel').addEventListener('click', () => {
+            const content = document.getElementById('debugContent');
+            const isVisible = content.style.display !== 'none';
+            content.style.display = isVisible ? 'none' : 'block';
+            document.getElementById('toggleDebugPanel').textContent = isVisible ? '▼' : '×';
+        });
+    }
+}
+
+function updateDebugDisplay(label, value, type = '') {
+    const debugPanel = document.getElementById('droneDebugPanel');
+    if (!debugPanel) return;
+    
+    const debugRows = debugPanel.querySelectorAll('.debug-row');
+    debugRows.forEach(row => {
+        const labelSpan = row.querySelector('.debug-label');
+        const valueSpan = row.querySelector('.debug-value');
+        
+        if (labelSpan && labelSpan.textContent.includes(label)) {
+            valueSpan.textContent = value;
+            valueSpan.className = `debug-value ${type}`;
+        }
+    });
+}
+
+function disconnectWebSocketDrone() {
+    if (websocketConnection) {
+        console.log('Disconnecting WebSocket drone...');
+        websocketConnection.close();
+        websocketConnection = null;
+        showNotification('WebSocket drone disconnected', 'warning');
+        updateDebugDisplay('WebSocket Status', 'Manually Disconnected', 'warning');
+    } else {
+        showNotification('WebSocket drone is not connected', 'info');
+    }
+}
+
+function resetDronePosition() {
+    console.log('Resetting drone to initial position...');
+    
+    // Reset position to initial values (can be adjusted based on your needs)
+    dronePosition = {
+        lat: 55.5,
+        lon: 22.2,
+        alt: 0
+    };
+    
+    // Update the drone entity if it exists
+    if (websocketDrone) {
+        websocketDrone.position = Cesium.Cartesian3.fromDegrees(
+            dronePosition.lon,
+            dronePosition.lat,
+            dronePosition.alt
+        );
+        
+        // Fly to the reset position
+        viewer.flyTo(websocketDrone, {
+            duration: 2.0,
+            offset: new Cesium.HeadingPitchRange(
+                Cesium.Math.toRadians(0),
+                Cesium.Math.toRadians(-45),
+                2000
+            )
+        });
+    }
+    
+    // Update debug display
+    updateDebugDisplay('Before Position', 
+        `Lat: ${dronePosition.lat.toFixed(6)}, Lon: ${dronePosition.lon.toFixed(6)}, Alt: ${dronePosition.alt.toFixed(2)}m`);
+    updateDebugDisplay('After Position', 
+        `Lat: ${dronePosition.lat.toFixed(6)}, Lon: ${dronePosition.lon.toFixed(6)}, Alt: ${dronePosition.alt.toFixed(2)}m`);
+    updateDebugDisplay('Delta Received', 'Reset to initial position');
+    updateDebugDisplay('Drone Mode', 'MANUAL (Armed: false)');
+    updateDebugDisplay('Timestamp', new Date().toLocaleTimeString());
+    
+    showNotification('Drone position reset to initial location', 'success');
+    updateStatusBar('right', `Alt: ${dronePosition.alt.toFixed(1)}m | MANUAL`);
+}
+
+// Add WebSocket drone functions to the global API
+window.skyLoomAPI.initializeWebSocketDrone = initializeWebSocketDrone;
+window.skyLoomAPI.disconnectWebSocketDrone = disconnectWebSocketDrone;
+window.skyLoomAPI.resetDronePosition = resetDronePosition; 

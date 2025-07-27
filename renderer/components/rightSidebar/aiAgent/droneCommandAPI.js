@@ -1,6 +1,6 @@
 class DroneCommandAPI {
     constructor() {
-        this.baseURL = 'http://localhost:8000';
+        this.baseURL = 'http://localhost:8001';
         this.endpoint = '/execute-command';
     }
 
