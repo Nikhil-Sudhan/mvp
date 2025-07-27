@@ -9,7 +9,6 @@ function init() {
     setupWindowControls();
     setupCommandPalette();
     setupCesiumMap();
-    setupMapControls();
     setupStatusBarUpdates();
     
     // Wait for sidebar manager to be ready, then set initial state
@@ -174,8 +173,8 @@ async function setupCesiumMap() {
         viewer.scene.globe.atmosphereSaturation = 1.9;
         viewer.scene.globe.atmosphereBrightness = 1.0;
         
-        // Add terrain exaggeration for better 3D effect
-        viewer.scene.globe.terrainExaggeration = 1.5;
+        // Disable terrain exaggeration to prevent entity movement
+        viewer.scene.globe.terrainExaggeration = 1.0;
         viewer.scene.globe.terrainExaggerationRelativeHeight = 0.0;
 
         // Force 3D mode
@@ -211,12 +210,25 @@ async function setupCesiumMap() {
             showNotification('Imagery failed to load - check token', 'error');
         }
 
-        // Set initial 3D view with better perspective
+        // Add the specified 3D model
+        try {
+            console.log('Loading custom 3D model...');
+            const tileset = await viewer.scene.primitives.add(
+                await Cesium.Cesium3DTileset.fromIonAssetId(3013232)
+            );
+            console.log('Custom 3D model loaded successfully');
+            showNotification('Custom 3D model loaded', 'success');
+        } catch (error) {
+            console.error('Failed to load custom 3D model:', error);
+            showNotification('Custom 3D model failed to load', 'warning');
+        }
+
+        // Set the home location
         viewer.camera.setView({
-            destination: Cesium.Cartesian3.fromDegrees(-122.4194, 37.7749, 5000.0), // Much closer for 3D effect
+            destination: Cesium.Cartesian3.fromDegrees(77.68423117301315, 9.581092224928884, 5000.0), // Updated home location coordinates
             orientation: {
-                heading: Cesium.Math.toRadians(45.0), // Angled view
-                pitch: Cesium.Math.toRadians(-30.0), // Look down at angle for 3D perspective
+                heading: Cesium.Math.toRadians(45.0),
+                pitch: Cesium.Math.toRadians(-30.0),
                 roll: 0.0
             }
         });
@@ -246,10 +258,24 @@ async function setupCesiumMap() {
         });
 
         // Store viewer globally for access from other functions
+        window.viewer = viewer; // Make sure it's available globally
         window.cesiumViewer = viewer;
 
         console.log('Cesium map initialized successfully');
         showNotification('Cesium map with satellite imagery loaded', 'success');
+        
+        // Initialize map controls manager after viewer is ready
+        setTimeout(() => {
+            if (window.MapControlsManager) {
+                window.mapControlsManager = new MapControlsManager();
+            }
+            
+            // Initialize drone configuration manager if available
+            if (typeof DroneConfigurationManager !== 'undefined') {
+                console.log('Initializing drone configuration manager');
+                window.droneConfigManager = new DroneConfigurationManager();
+            }
+        }, 1000);
     } catch (error) {
         console.error('Detailed error initializing Cesium map:', error);
         console.error('Error stack:', error.stack);
@@ -329,14 +355,15 @@ async function addMissionEntities() {
                 dimensions: new Cesium.Cartesian3(40, 40, 10),
                 material: Cesium.Color.YELLOW.withAlpha(0.8),
                 outline: true,
-                outlineColor: Cesium.Color.BLACK
+                outlineColor: Cesium.Color.BLACK,
+                heightReference: Cesium.HeightReference.NONE
             },
             point: {
                 pixelSize: 15,
                 color: Cesium.Color.YELLOW,
                 outlineColor: Cesium.Color.BLACK,
                 outlineWidth: 2,
-                heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+                heightReference: Cesium.HeightReference.NONE,
                 show: false
             },
             label: {
@@ -348,7 +375,7 @@ async function addMissionEntities() {
                 outlineWidth: 2,
                 style: Cesium.LabelStyle.FILL_AND_OUTLINE,
                 scale: 1.0,
-                heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
+                heightReference: Cesium.HeightReference.NONE
             }
         });
 
@@ -385,7 +412,8 @@ async function addMissionEntities() {
                     pixelSize: 12,
                     color: Cesium.Color.ORANGE,
                     outlineColor: Cesium.Color.WHITE,
-                    outlineWidth: 2
+                    outlineWidth: 2,
+                    heightReference: Cesium.HeightReference.NONE
                 },
                 label: {
                     text: `${waypoint.name}\n${waypoint.description}`,
@@ -394,7 +422,8 @@ async function addMissionEntities() {
                     fillColor: Cesium.Color.WHITE,
                     outlineColor: Cesium.Color.BLACK,
                     outlineWidth: 1,
-                    style: Cesium.LabelStyle.FILL_AND_OUTLINE
+                    style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                    heightReference: Cesium.HeightReference.NONE
                 }
             });
         });
@@ -414,7 +443,8 @@ async function addMissionEntities() {
                 material: Cesium.Color.GREEN.withAlpha(0.8),
                 outline: true,
                 outlineColor: Cesium.Color.DARKGREEN,
-                outlineWidth: 3
+                outlineWidth: 3,
+                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
             },
             label: {
                 text: `${mission.homeBase.name}\n${mission.homeBase.description}`,
@@ -423,7 +453,8 @@ async function addMissionEntities() {
                 fillColor: Cesium.Color.GREEN,
                 outlineColor: Cesium.Color.BLACK,
                 outlineWidth: 2,
-                style: Cesium.LabelStyle.FILL_AND_OUTLINE
+                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
             }
         });
 
@@ -448,98 +479,8 @@ async function addMissionEntities() {
     }
 }
 
-// Map Controls Setup
-function setupMapControls() {
-    const homeBtn = document.getElementById('homeBtn');
-    const layersBtn = document.getElementById('layersBtn');
-    const measureBtn = document.getElementById('measureBtn');
-    const fullscreenBtn = document.getElementById('fullscreenBtn');
-
-    if (homeBtn) {
-        homeBtn.addEventListener('click', () => {
-            if (viewer) {
-                // Fly to drone location with better view
-                const droneEntity = viewer.entities.getById('mainDrone');
-                if (droneEntity) {
-                    viewer.flyTo(droneEntity, {
-                        duration: 2.0,
-                        offset: new Cesium.HeadingPitchRange(0, -0.5, 2000)
-                    });
-                } else {
-                    viewer.camera.setView({
-                        destination: Cesium.Cartesian3.fromDegrees(-122.4194, 37.7749, 15000.0),
-                        orientation: {
-                            heading: 0.0,
-                            pitch: -0.5,
-                            roll: 0.0
-                        }
-                    });
-                }
-                showNotification('Returned to home view', 'info');
-            }
-        });
-    }
-
-    if (layersBtn) {
-        layersBtn.addEventListener('click', () => {
-            toggleImageryLayers();
-            layersBtn.classList.toggle('active');
-        });
-    }
-
-    if (measureBtn) {
-        measureBtn.addEventListener('click', () => {
-            // Placeholder for measure functionality
-            showNotification('Measure tool coming soon!', 'info');
-        });
-    }
-
-    if (fullscreenBtn) {
-        fullscreenBtn.addEventListener('click', () => {
-            toggleFullscreen();
-        });
-    }
-}
-
-function toggleImageryLayers() {
-    if (!viewer) return;
-
-    // Toggle between different Cesium Ion imagery assets
-    const currentProvider = viewer.imageryLayers.get(0).imageryProvider;
-    
-    // Check current asset ID to determine what to switch to
-    if (currentProvider.assetId === 2) {
-        // Switch to Bing Maps Roads (Asset ID 3)
-        viewer.imageryLayers.removeAll();
-        viewer.imageryLayers.addImageryProvider(
-            new Cesium.IonImageryProvider({ assetId: 3 })
-        );
-        showNotification('Switched to road map', 'info');
-    } else {
-        // Switch back to Bing Maps Aerial with Labels (Asset ID 2)
-        viewer.imageryLayers.removeAll();
-        viewer.imageryLayers.addImageryProvider(
-            new Cesium.IonImageryProvider({ assetId: 2 })
-        );
-        showNotification('Switched to satellite view', 'info');
-    }
-}
-
-function toggleFullscreen() {
-    const centerContent = document.querySelector('.center-content');
-    
-    if (!document.fullscreenElement) {
-        centerContent.requestFullscreen().then(() => {
-            showNotification('Entered fullscreen mode', 'info');
-        }).catch(err => {
-            showNotification('Could not enter fullscreen mode', 'error');
-        });
-    } else {
-        document.exitFullscreen().then(() => {
-            showNotification('Exited fullscreen mode', 'info');
-        });
-    }
-}
+// Map Controls are now handled by MapControlsManager
+// The old setupMapControls function has been replaced with a more robust solution
 
 // Drone function execution
 function executeDroneFunction(functionName) {
@@ -721,6 +662,33 @@ function addFlightPath(positions, color = Cesium.Color.CYAN) {
         }
     });
 }
+
+// Function to display 3D model drones
+function displayDrones() {
+    const droneModels = Object.values(DRONE_MODELS);
+    droneModels.forEach(async (model) => {
+        try {
+            console.log(`Loading drone model with Asset ID: ${model.ionAssetId}`);
+            const tileset = await viewer.scene.primitives.add(
+                await Cesium.Cesium3DTileset.fromIonAssetId(model.ionAssetId)
+            );
+            tileset.style = new Cesium.Cesium3DTileStyle({
+                color: 'color("white")',
+                show: true
+            });
+            tileset.scale = model.scale;
+            tileset.minimumPixelSize = model.minimumPixelSize;
+            console.log('Drone model loaded successfully');
+            showNotification('Drone model loaded', 'success');
+        } catch (error) {
+            console.error('Failed to load drone model:', error);
+            showNotification('Drone model failed to load', 'warning');
+        }
+    });
+}
+
+// Attach event listener to the test button
+document.getElementById('testDronesBtn').addEventListener('click', displayDrones);
 
 // Handle window focus for development
 window.addEventListener('focus', () => {

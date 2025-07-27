@@ -1,7 +1,130 @@
 <div class="drone-config-panel">
     <div class="panel-header">
         <h3><i class="fas fa-cogs"></i> Drone Configuration</h3>
+        <!-- Add Drone Button and Dropdown -->
+        <div class="add-drone-container">
+            <button id="addDroneBtn" class="add-drone-btn">
+                <i class="fas fa-plus"></i> Add Drone
+            </button>
+            <div id="droneDropdown" class="drone-dropdown hidden">
+                <div class="drone-option" data-drone="hovermax">
+                    <img src="../../../../assets/hovermax.png" alt="Hovermax" class="option-img">
+                    <span>Hovermax</span>
+                </div>
+                <div class="drone-option" data-drone="phantom-x2">
+                    <img src="../../../../assets/panthom x2.png" alt="Phantom X2" class="option-img">
+                    <span>Phantom X2</span>
+                </div>
+            </div>
+        </div>
     </div>
+    
+    <!-- Elegant Drone List Section -->
+    <div class="drone-fleet-section">
+        <div class="section-header">
+            <h4>Active Fleet</h4>
+            <span class="drone-count">2 Drones</span>
+        </div>
+        
+        <div class="drone-grid">
+            <!-- Phantom X2 Card -->
+            <div class="drone-card elegant">
+                <div class="card-header">
+                    <div class="drone-avatar">
+                        <img src="../../../../assets/panthom x2.png" alt="Phantom X2" class="drone-img">
+                        <div class="status-badge active">
+                            <div class="status-dot"></div>
+                        </div>
+                    </div>
+                    <div class="drone-title">
+                        <h5>Phantom X2</h5>
+                        <span class="drone-id">ID: hR49dfY5</span>
+                    </div>
+                </div>
+                
+                <div class="card-metrics">
+                    <div class="metric">
+                        <div class="metric-icon battery">
+                            <i class="fas fa-battery-three-quarters"></i>
+                        </div>
+                        <div class="metric-info">
+                            <span class="value">78%</span>
+                            <span class="label">Battery</span>
+                        </div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-icon signal">
+                            <i class="fas fa-wifi"></i>
+                        </div>
+                        <div class="metric-info">
+                            <span class="value">Strong</span>
+                            <span class="label">Signal</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-specs">
+                    <div class="spec-row">
+                        <span>Range</span>
+                        <span class="spec-value">15 km</span>
+                    </div>
+                    <div class="spec-row">
+                        <span>Payload</span>
+                        <span class="spec-value">2.5 kg</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hovermax Card -->
+            <div class="drone-card elegant">
+                <div class="card-header">
+                    <div class="drone-avatar">
+                        <img src="../../../../assets/hovermax.png" alt="Hovermax" class="drone-img">
+                        <div class="status-badge active">
+                            <div class="status-dot"></div>
+                        </div>
+                    </div>
+                    <div class="drone-title">
+                        <h5>Hovermax</h5>
+                        <span class="drone-id">ID: hR49dfY5</span>
+                    </div>
+                </div>
+                
+                <div class="card-metrics">
+                    <div class="metric">
+                        <div class="metric-icon battery">
+                            <i class="fas fa-battery-three-quarters"></i>
+                        </div>
+                        <div class="metric-info">
+                            <span class="value">78%</span>
+                            <span class="label">Battery</span>
+                        </div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-icon signal">
+                            <i class="fas fa-wifi"></i>
+                        </div>
+                        <div class="metric-info">
+                            <span class="value">Strong</span>
+                            <span class="label">Signal</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-specs">
+                    <div class="spec-row">
+                        <span>Range</span>
+                        <span class="spec-value">15 km</span>
+                    </div>
+                    <div class="spec-row">
+                        <span>Payload</span>
+                        <span class="spec-value">2.5 kg</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="config-content">
         <div class="config-section">
             <h4><i class="fas fa-wifi"></i> Connection Settings</h4>

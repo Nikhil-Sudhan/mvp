@@ -1,4 +1,3 @@
-// Enhanced Drawing Tools Component for Cesium
 class DrawingTools {
     constructor(cesiumViewer, aiAgentInstance) {
         this.viewer = cesiumViewer;
@@ -8,34 +7,23 @@ class DrawingTools {
         this.drawingHandler = null;
         this.activeEntity = null;
         this.activePoints = [];
-        this.drawnEntities = [];
         
         // Tool types
         this.tools = {
             POLYGON: 'polygon',
-            SQUARE: 'square', 
-            CIRCLE: 'circle',
-            ERASE: 'erase'
+            SQUARE: 'square',
+            CIRCLE: 'circle'
         };
-        
-        // Drawing states
-        this.drawingState = {
-            IDLE: 'idle',
-            DRAWING: 'drawing',
-            ERASING: 'erasing'
-        };
-        this.currentState = this.drawingState.IDLE;
         
         this.init();
     }
 
     init() {
-        this.setupEventHandlers();
-        this.setupMapControlsEvents();
+        this.setupMapControls();
     }
 
-    setupMapControlsEvents() {
-        // Tool selection from map controls
+    setupMapControls() {
+        // Listen for tool selection from map controls
         document.querySelectorAll('.draw-tool-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const tool = e.currentTarget.dataset.tool;
@@ -43,107 +31,52 @@ class DrawingTools {
             });
         });
 
-        // Clear all button from map controls
+        // Clear all button
         const clearAllBtn = document.getElementById('clearAllTool');
         if (clearAllBtn) {
             clearAllBtn.addEventListener('click', () => {
-                if (confirm('Clear all drawn shapes? This action cannot be undone.')) {
-                    this.clearAllShapes();
+                if (confirm('Clear all drawn shapes? This cannot be undone.')) {
+                    this.clearAll();
                 }
             });
         }
     }
 
-    updateDrawingStatus(message, type = 'idle') {
-        // Instead of updating a status div, we can show notifications or console messages
-        console.log(`Drawing Status: ${message}`);
-        
-        // Optional: Show temporary tooltip or notification
-        if (type === 'drawing' || type === 'erasing') {
-            this.showTemporaryStatus(message);
-        }
-    }
-
-    showTemporaryStatus(message) {
-        // Create a temporary status overlay on the map
-        const statusDiv = document.createElement('div');
-        statusDiv.className = 'drawing-status-overlay';
-        statusDiv.textContent = message;
-        statusDiv.style.cssText = `
-            position: absolute;
-            top: 60px;
-            right: 15px;
-            background: rgba(45, 45, 45, 0.9);
-            color: #cccccc;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            z-index: 999;
-            backdrop-filter: blur(10px);
-        `;
-        
-        document.body.appendChild(statusDiv);
-        
-        // Remove after 3 seconds
-        setTimeout(() => {
-            if (statusDiv.parentNode) {
-                statusDiv.parentNode.removeChild(statusDiv);
-            }
-        }, 3000);
-    }
-
-    setupEventHandlers() {
-        // Handle keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (this.isDrawing) {
-                if (e.key === 'Escape') {
-                    this.cancelDrawing();
-                } else if (e.key === 'Enter' && this.currentTool === this.tools.POLYGON) {
-                    this.finishPolygon();
-                }
-            }
-        });
-    }
-
     selectTool(toolType) {
-        // Stop current drawing if any
+        // Stop current drawing
         if (this.isDrawing) {
             this.stopDrawing();
         }
 
-        // Update UI - remove active class from all drawing tool buttons
-        document.querySelectorAll('.draw-tool-btn, .clear-all-btn').forEach(btn => {
+        // Update UI - remove active from all buttons
+        document.querySelectorAll('.draw-tool-btn').forEach(btn => {
             btn.classList.remove('active');
         });
         
-        // Add active class to selected tool
+        // Add active to selected tool
         const selectedBtn = document.querySelector(`[data-tool="${toolType}"]`);
         if (selectedBtn) {
             selectedBtn.classList.add('active');
         }
 
         this.currentTool = toolType;
-
-        if (toolType === this.tools.ERASE) {
-            this.startEraseMode();
-        } else {
-            this.startDrawing(toolType);
-        }
+        this.startDrawing(toolType);
     }
 
     startDrawing(toolType) {
         if (!this.viewer) {
-            this.showError('Cesium viewer not available');
+            console.error('Cesium viewer not available');
             return;
         }
 
         this.isDrawing = true;
-        this.currentState = this.drawingState.DRAWING;
         this.activePoints = [];
         this.activeEntity = null;
 
         // Disable camera controls during drawing
-        this.viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+        this.viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(
+            Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK
+        );
 
         this.drawingHandler = new Cesium.ScreenSpaceEventHandler(this.viewer.scene.canvas);
 
@@ -159,16 +92,26 @@ class DrawingTools {
                 break;
         }
 
-        this.updateStatus(`Drawing ${toolType}... Click to add points. Press Escape to cancel.`, 'drawing');
+        // Add status message
+        if (this.aiAgent) {
+            this.aiAgent.addAIMessage(`🎨 Drawing ${toolType} - Left click to add points, Right click to finish/cancel`);
+        }
+
+        console.log(`Started drawing ${toolType}`);
     }
 
     startPolygonDrawing() {
         this.drawingHandler.setInputAction((event) => {
-            const pickedPosition = this.viewer.camera.pickEllipsoid(event.position, this.viewer.scene.globe.ellipsoid);
+            const pickedPosition = this.viewer.camera.pickEllipsoid(
+                event.position, 
+                this.viewer.scene.globe.ellipsoid
+            );
+            
             if (pickedPosition) {
                 this.activePoints.push(pickedPosition);
                 
                 if (this.activePoints.length === 1) {
+                    // Create polygon entity
                     this.activeEntity = this.viewer.entities.add({
                         polygon: {
                             hierarchy: new Cesium.CallbackProperty(() => {
@@ -182,14 +125,16 @@ class DrawingTools {
                         }
                     });
                 }
-                
-                this.updateStatus(`Polygon: ${this.activePoints.length} points. Right-click to finish (min 3 points).`);
             }
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-        // Right click to finish
+        // Right click to finish or cancel
         this.drawingHandler.setInputAction(() => {
-            this.finishPolygon();
+            if (this.activePoints.length >= 3) {
+                this.finishPolygon();
+            } else {
+                this.cancelDrawing();
+            }
         }, Cesium.ScreenSpaceEventType.RIGHT_CLICK);
     }
 
@@ -197,12 +142,15 @@ class DrawingTools {
         let startPoint = null;
 
         this.drawingHandler.setInputAction((event) => {
-            const pickedPosition = this.viewer.camera.pickEllipsoid(event.position, this.viewer.scene.globe.ellipsoid);
+            const pickedPosition = this.viewer.camera.pickEllipsoid(
+                event.position, 
+                this.viewer.scene.globe.ellipsoid
+            );
+            
             if (!pickedPosition) return;
 
             if (!startPoint) {
                 startPoint = pickedPosition;
-                this.updateStatus('Click second point to define square size...');
             } else {
                 this.finishSquare(startPoint, pickedPosition);
             }
@@ -212,23 +160,46 @@ class DrawingTools {
         this.drawingHandler.setInputAction((event) => {
             if (!startPoint) return;
 
-            const pickedPosition = this.viewer.camera.pickEllipsoid(event.endPosition, this.viewer.scene.globe.ellipsoid);
+            const pickedPosition = this.viewer.camera.pickEllipsoid(
+                event.endPosition, 
+                this.viewer.scene.globe.ellipsoid
+            );
+            
             if (pickedPosition) {
                 this.previewSquare(startPoint, pickedPosition);
             }
         }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+        // Right click to finish (if we have a start point) or cancel
+        this.drawingHandler.setInputAction(() => {
+            if (startPoint) {
+                // Use a default size if only start point is set
+                const endPoint = Cesium.Cartesian3.add(
+                    startPoint,
+                    new Cesium.Cartesian3(1000, 1000, 0),
+                    new Cesium.Cartesian3()
+                );
+                this.finishSquare(startPoint, endPoint);
+            } else {
+                // Cancel drawing if no start point
+                this.cancelDrawing();
+            }
+        }, Cesium.ScreenSpaceEventType.RIGHT_CLICK);
     }
 
     startCircleDrawing() {
         let centerPoint = null;
 
         this.drawingHandler.setInputAction((event) => {
-            const pickedPosition = this.viewer.camera.pickEllipsoid(event.position, this.viewer.scene.globe.ellipsoid);
+            const pickedPosition = this.viewer.camera.pickEllipsoid(
+                event.position, 
+                this.viewer.scene.globe.ellipsoid
+            );
+            
             if (!pickedPosition) return;
 
             if (!centerPoint) {
                 centerPoint = pickedPosition;
-                this.updateStatus('Click to set radius...');
             } else {
                 this.finishCircle(centerPoint, pickedPosition);
             }
@@ -238,11 +209,31 @@ class DrawingTools {
         this.drawingHandler.setInputAction((event) => {
             if (!centerPoint) return;
 
-            const pickedPosition = this.viewer.camera.pickEllipsoid(event.endPosition, this.viewer.scene.globe.ellipsoid);
+            const pickedPosition = this.viewer.camera.pickEllipsoid(
+                event.endPosition, 
+                this.viewer.scene.globe.ellipsoid
+            );
+            
             if (pickedPosition) {
                 this.previewCircle(centerPoint, pickedPosition);
             }
         }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+        // Right click to finish (if we have a center point) or cancel
+        this.drawingHandler.setInputAction(() => {
+            if (centerPoint) {
+                // Use a default radius if only center point is set
+                const edgePoint = Cesium.Cartesian3.add(
+                    centerPoint,
+                    new Cesium.Cartesian3(500, 0, 0),
+                    new Cesium.Cartesian3()
+                );
+                this.finishCircle(centerPoint, edgePoint);
+            } else {
+                // Cancel drawing if no center point
+                this.cancelDrawing();
+            }
+        }, Cesium.ScreenSpaceEventType.RIGHT_CLICK);
     }
 
     previewSquare(startPoint, endPoint) {
@@ -322,7 +313,7 @@ class DrawingTools {
         if (this.activePoints.length >= 3) {
             this.finishDrawing();
         } else {
-            this.showError('Polygon needs at least 3 points');
+            console.warn('Polygon needs at least 3 points');
             this.cancelDrawing();
         }
     }
@@ -348,21 +339,21 @@ class DrawingTools {
         this.activeEntity.polygon.material = Cesium.Color.CYAN.withAlpha(0.3);
         this.activeEntity.polygon.outlineColor = Cesium.Color.CYAN;
 
-        // Store the entity for potential deletion
-        this.drawnEntities.push({
-            entity: this.activeEntity,
-            points: this.activePoints.slice(),
-            type: this.currentTool
-        });
-
-        // Show save modal
+        // Prepare for waypoint saving
         this.aiAgent.currentPolygon = {
             entity: this.activeEntity,
             positions: this.activePoints.slice(),
             type: this.currentTool
         };
         
-        this.aiAgent.showWaypointModal();
+        // Automatically save waypoint with default name
+        this.aiAgent.saveCurrentWaypointAuto();
+        
+        // Add success message
+        if (this.aiAgent) {
+            this.aiAgent.addAIMessage(`✅ Shape completed and saved as waypoint! Drawing tool deactivated.`);
+        }
+        
         this.stopDrawing();
     }
 
@@ -375,7 +366,6 @@ class DrawingTools {
 
     stopDrawing() {
         this.isDrawing = false;
-        this.currentState = this.drawingState.IDLE;
         this.activePoints = [];
         this.activeEntity = null;
 
@@ -392,131 +382,55 @@ class DrawingTools {
         }
 
         // Update UI
-        document.querySelectorAll('.draw-tool').forEach(btn => {
+        document.querySelectorAll('.draw-tool-btn').forEach(btn => {
             btn.classList.remove('active');
         });
 
-        this.updateStatus('Click a tool to start drawing');
+        console.log('Stopped drawing');
     }
 
-    startEraseMode() {
-        this.currentState = this.drawingState.ERASING;
-        this.drawingHandler = new Cesium.ScreenSpaceEventHandler(this.viewer.scene.canvas);
-
-        this.drawingHandler.setInputAction((event) => {
-            const pickedObject = this.viewer.scene.pick(event.position);
-            if (pickedObject && pickedObject.id) {
-                this.deleteShape(pickedObject.id);
+    clearAll() {
+        // Remove all entities from the viewer
+        const entitiesToRemove = [];
+        this.viewer.entities.values.forEach(entity => {
+            if (entity.polygon) {
+                entitiesToRemove.push(entity);
             }
-        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-
-        this.updateStatus('Click on shapes to erase them. Click another tool to exit erase mode.', 'erasing');
-    }
-
-    deleteShape(entity) {
-        // Remove from Cesium
-        this.viewer.entities.remove(entity);
-
-        // Remove from drawn entities
-        this.drawnEntities = this.drawnEntities.filter(item => item.entity !== entity);
-
-        // Remove from waypoints if it's a saved waypoint
-        if (this.aiAgent && this.aiAgent.waypoints) {
-            const waypoint = this.aiAgent.waypoints.find(w => w.entityId === entity.id);
-            if (waypoint) {
-                this.aiAgent.waypoints = this.aiAgent.waypoints.filter(w => w.id !== waypoint.id);
-                this.aiAgent.saveWaypoints();
-                this.aiAgent.updateWaypointsList();
-                this.aiAgent.addAIMessage(`Waypoint "${waypoint.name}" erased.`);
-            }
-        }
-
-        this.showSuccess('Shape erased successfully');
-    }
-
-    toggleToolbar() {
-        const toolbar = document.getElementById('drawing-toolbar');
-        const content = toolbar.querySelector('.toolbar-content');
-        const toggle = toolbar.querySelector('.toolbar-toggle i');
-
-        if (content.style.display === 'none') {
-            content.style.display = 'block';
-            toggle.className = 'fas fa-chevron-up';
-        } else {
-            content.style.display = 'none';
-            toggle.className = 'fas fa-chevron-down';
-        }
-    }
-
-    updateStatus(message, type = 'normal') {
-        const statusElement = document.getElementById('drawing-status');
-        if (statusElement) {
-            // Remove existing status classes
-            statusElement.classList.remove('drawing', 'erasing', 'success', 'error');
-            
-            // Add new status class based on type
-            if (type === 'drawing') {
-                statusElement.classList.add('drawing');
-            } else if (type === 'erasing') {
-                statusElement.classList.add('erasing');
-            } else if (type === 'success') {
-                statusElement.classList.add('success');
-            } else if (type === 'error') {
-                statusElement.classList.add('error');
-            }
-            
-            statusElement.innerHTML = `<span>${message}</span>`;
-        }
-    }
-
-    showError(message) {
-        if (this.aiAgent && this.aiAgent.showError) {
-            this.aiAgent.showError(message);
-        }
-    }
-
-    showSuccess(message) {
-        if (this.aiAgent && this.aiAgent.showNotification) {
-            this.aiAgent.showNotification(message, 'success');
-        }
-    }
-
-    // Public methods
-    clearAllShapes() {
-        const count = this.drawnEntities.length;
-        this.drawnEntities.forEach(item => {
-            this.viewer.entities.remove(item.entity);
         });
-        this.drawnEntities = [];
-        
-        if (count > 0) {
-            this.updateStatus(`Cleared ${count} shapes`, 'success');
-            // Reset to normal status after 3 seconds
-            setTimeout(() => {
-                this.updateStatus('Click a tool to start drawing');
-            }, 3000);
-        } else {
-            this.updateStatus('No shapes to clear', 'error');
-            setTimeout(() => {
-                this.updateStatus('Click a tool to start drawing');
-            }, 2000);
+
+        entitiesToRemove.forEach(entity => {
+            this.viewer.entities.remove(entity);
+        });
+
+        // Clear waypoints from AI agent
+        if (this.aiAgent) {
+            this.aiAgent.waypoints = [];
+            this.aiAgent.saveWaypoints();
+            this.aiAgent.updateWaypointsList();
+            this.aiAgent.addAIMessage(`Cleared all shapes and waypoints.`);
         }
+
+        console.log(`Cleared ${entitiesToRemove.length} shapes`);
     }
 
-    getDrawnShapes() {
-        return this.drawnEntities.map(item => ({
-            type: item.type,
-            positions: item.points.map(pos => {
-                const cartographic = Cesium.Cartographic.fromCartesian(pos);
-                return {
-                    longitude: Cesium.Math.toDegrees(cartographic.longitude),
-                    latitude: Cesium.Math.toDegrees(cartographic.latitude),
-                    height: cartographic.height || 0
-                };
-            })
-        }));
+    // Keyboard shortcuts
+    handleKeydown(event) {
+        if (this.isDrawing) {
+            if (event.key === 'Escape') {
+                this.cancelDrawing();
+            } else if (event.key === 'Enter' && this.currentTool === this.tools.POLYGON) {
+                this.finishPolygon();
+            }
+        }
     }
 }
+
+// Set up global keyboard listener
+document.addEventListener('keydown', (event) => {
+    if (window.drawingToolsInstance) {
+        window.drawingToolsInstance.handleKeydown(event);
+    }
+});
 
 // Export for global access
 window.DrawingTools = DrawingTools; 

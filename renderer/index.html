@@ -6,8 +6,10 @@
     <title>Sky Loom - Drone Control IDE</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="components/common/sidebar.css">
+    <link rel="stylesheet" href="components/leftSidebar/droneConfiguration/droneConfiguration.css">
     <link rel="stylesheet" href="components/rightSidebar/aiAgent/aiAgent.css">
     <link rel="stylesheet" href="components/rightSidebar/aiAgent/drawingTools.css">
+    <link rel="stylesheet" href="components/mapControls/mapControls.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
@@ -106,6 +108,12 @@
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
+                    <!-- Test Button for Displaying 3D Model Drones -->
+                    <div class="control-group">
+                        <button class="map-btn" id="testDronesBtn" title="Test Drones">
+                            <i class="fas fa-cube"></i> Test Drones
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -150,9 +158,14 @@
     </div>
 
     <script src="components/common/sidebarManager.js"></script>
+    <script src="components/leftSidebar/trackMission/trackMission.js"></script>
+    <script src="components/leftSidebar/droneConfiguration/droneConfiguration.js"></script>
     <script src="components/rightSidebar/aiAgent/waypointStorage.js"></script>
-    <script src="components/rightSidebar/aiAgent/drawingTools.js"></script>
     <script src="components/rightSidebar/aiAgent/aiAgent.js"></script>
+    <script src="components/rightSidebar/aiAgent/drawingTools.js"></script>
+    <script src="components/rightSidebar/aiAgent/droneCommandAPI.js"></script>
+    <script src="components/mapControls/mapControlsManager.js"></script>
+    
     <script src="script.js"></script>
 </body>
 </html> 

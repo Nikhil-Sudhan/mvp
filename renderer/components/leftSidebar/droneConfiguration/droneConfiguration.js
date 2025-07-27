@@ -1,163 +1,187 @@
-class DroneConfiguration {
+// Drone configuration constants
+const HOME_LOCATION = {
+    latitude: 9.581092224928884,  // San Francisco coordinates as example
+    longitude: 77.68423117301315,
+    altitude: 50 // meters above ground
+};
+
+const DRONE_MODELS = {
+    'hovermax': {
+        ionAssetId: 3013232,
+        scale: 1.0,
+        minimumPixelSize: 128
+    },
+    'phantom-x2': {
+        ionAssetId: 3013232, // Using same asset ID for example
+        scale: 0.8,
+        minimumPixelSize: 128
+    }
+};
+
+// Initialize immediately to ensure event listeners are attached
+let droneConfigManager;
+
+class DroneConfigurationManager {
     constructor() {
-        this.initializeEventListeners();
-        this.loadConfiguration();
+        console.log("Initializing DroneConfigurationManager");
+        this.initializeUI();
+        this.bindEvents();
     }
 
-    initializeEventListeners() {
-        document.getElementById('save-config')?.addEventListener('click', () => this.saveConfiguration());
-        document.getElementById('load-config')?.addEventListener('click', () => this.loadConfiguration());
-        document.getElementById('reset-config')?.addEventListener('click', () => this.resetConfiguration());
+    initializeUI() {
+        this.addDroneBtn = document.getElementById('addDroneBtn');
+        this.droneDropdown = document.getElementById('droneDropdown');
+        this.droneOptions = document.querySelectorAll('.drone-option');
         
-        // Auto-save on changes
-        const inputs = document.querySelectorAll('#connection-type, #connection-address, #baud-rate, #max-altitude, #max-speed, #rth-altitude, #auto-land-battery');
-        inputs.forEach(input => {
-            input.addEventListener('change', () => this.autoSave());
-        });
-
-        const checkboxes = document.querySelectorAll('#geofence, #obstacle-avoidance, #auto-rth, #motor-cutoff');
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', () => this.autoSave());
+        console.log("UI Elements:", {
+            addDroneBtn: this.addDroneBtn,
+            droneDropdown: this.droneDropdown,
+            droneOptions: this.droneOptions
         });
     }
 
-    getConfiguration() {
-        return {
-            connection: {
-                type: document.getElementById('connection-type')?.value || 'usb',
-                address: document.getElementById('connection-address')?.value || '',
-                baudRate: document.getElementById('baud-rate')?.value || '57600'
-            },
-            flight: {
-                maxAltitude: parseInt(document.getElementById('max-altitude')?.value || '120'),
-                maxSpeed: parseFloat(document.getElementById('max-speed')?.value || '15'),
-                rthAltitude: parseInt(document.getElementById('rth-altitude')?.value || '50'),
-                autoLandBattery: parseInt(document.getElementById('auto-land-battery')?.value || '20')
-            },
-            safety: {
-                geofence: document.getElementById('geofence')?.checked || false,
-                obstacleAvoidance: document.getElementById('obstacle-avoidance')?.checked || false,
-                autoRth: document.getElementById('auto-rth')?.checked || false,
-                motorCutoff: document.getElementById('motor-cutoff')?.checked || false
+    bindEvents() {
+        if (!this.addDroneBtn) {
+            console.error("Add Drone button not found!");
+            return;
+        }
+
+        // Toggle dropdown
+        this.addDroneBtn.addEventListener('click', (e) => {
+            console.log("Add Drone button clicked");
+            e.stopPropagation();
+            this.droneDropdown.classList.toggle('hidden');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.add-drone-container')) {
+                this.droneDropdown.classList.add('hidden');
             }
-        };
-    }
+        });
 
-    setConfiguration(config) {
-        // Connection settings
-        if (config.connection) {
-            document.getElementById('connection-type').value = config.connection.type || 'usb';
-            document.getElementById('connection-address').value = config.connection.address || '';
-            document.getElementById('baud-rate').value = config.connection.baudRate || '57600';
-        }
-
-        // Flight parameters
-        if (config.flight) {
-            document.getElementById('max-altitude').value = config.flight.maxAltitude || 120;
-            document.getElementById('max-speed').value = config.flight.maxSpeed || 15;
-            document.getElementById('rth-altitude').value = config.flight.rthAltitude || 50;
-            document.getElementById('auto-land-battery').value = config.flight.autoLandBattery || 20;
-        }
-
-        // Safety settings
-        if (config.safety) {
-            document.getElementById('geofence').checked = config.safety.geofence || false;
-            document.getElementById('obstacle-avoidance').checked = config.safety.obstacleAvoidance || false;
-            document.getElementById('auto-rth').checked = config.safety.autoRth || false;
-            document.getElementById('motor-cutoff').checked = config.safety.motorCutoff || false;
-        }
-    }
-
-    saveConfiguration() {
-        const config = this.getConfiguration();
-        localStorage.setItem('droneConfig', JSON.stringify(config));
-        this.showNotification('Configuration saved successfully!', 'success');
-    }
-
-    loadConfiguration() {
-        const saved = localStorage.getItem('droneConfig');
-        if (saved) {
-            try {
-                const config = JSON.parse(saved);
-                this.setConfiguration(config);
-                this.showNotification('Configuration loaded successfully!', 'info');
-            } catch (error) {
-                this.showNotification('Error loading configuration!', 'error');
-            }
+        // Handle drone selection
+        if (this.droneOptions && this.droneOptions.length > 0) {
+            this.droneOptions.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    console.log("Drone option clicked:", option.dataset.drone);
+                    this.handleDroneSelection(option);
+                });
+            });
         } else {
-            this.resetConfiguration();
+            console.error("No drone options found!");
         }
     }
 
-    resetConfiguration() {
-        const defaultConfig = {
-            connection: { type: 'usb', address: '', baudRate: '57600' },
-            flight: { maxAltitude: 120, maxSpeed: 15, rthAltitude: 50, autoLandBattery: 20 },
-            safety: { geofence: true, obstacleAvoidance: true, autoRth: true, motorCutoff: false }
-        };
+    async handleDroneSelection(option) {
+        const droneType = option.dataset.drone;
+        console.log(`Selected drone: ${droneType}`);
+        this.droneDropdown.classList.add('hidden');
         
-        this.setConfiguration(defaultConfig);
-        this.showNotification('Configuration reset to defaults!', 'warning');
-    }
-
-    autoSave() {
-        // Auto-save after 2 seconds of no changes
-        clearTimeout(this.autoSaveTimeout);
-        this.autoSaveTimeout = setTimeout(() => {
-            this.saveConfiguration();
-        }, 2000);
-    }
-
-    showNotification(message, type = 'info') {
-        // Create or update notification element
-        let notification = document.querySelector('.config-notification');
-        if (!notification) {
-            notification = document.createElement('div');
-            notification.className = 'config-notification';
-            document.querySelector('.config-content').prepend(notification);
+        try {
+            await this.addDroneToMap(droneType);
+            this.showNotification(`Added ${droneType} drone to map`, 'success');
+        } catch (error) {
+            console.error('Failed to add drone to map:', error);
+            this.showNotification(`Failed to add drone: ${error.message}`, 'error');
         }
+    }
 
+    async addDroneToMap(droneType) {
+        const modelConfig = DRONE_MODELS[droneType];
+        if (!modelConfig) {
+            throw new Error(`Unknown drone type: ${droneType}`);
+        }
+        
+        if (!window.viewer) {
+            throw new Error("Cesium viewer not initialized");
+        }
+        
+        console.log(`Adding ${droneType} drone to map`);
+        
+        // Create Cesium position from home location
+        const position = Cesium.Cartesian3.fromDegrees(
+            HOME_LOCATION.longitude,
+            HOME_LOCATION.latitude,
+            HOME_LOCATION.altitude
+        );
+
+        try {
+            console.log(`Loading 3D tileset for ${droneType}`);
+            
+            // Load the 3D tileset
+            const tileset = await Cesium.Cesium3DTileset.fromIonAssetId(modelConfig.ionAssetId);
+            
+            // Configure the tileset
+            tileset.scale = modelConfig.scale;
+            tileset.minimumPixelSize = modelConfig.minimumPixelSize;
+
+            // Add to scene
+            window.viewer.scene.primitives.add(tileset);
+            console.log("Added tileset to scene");
+
+            // Position the model
+            tileset.modelMatrix = Cesium.Matrix4.fromTranslation(position);
+
+            // Fly camera to the drone
+            window.viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(
+                    HOME_LOCATION.longitude,
+                    HOME_LOCATION.latitude,
+                    HOME_LOCATION.altitude + 200 // Camera position 200m above drone
+                ),
+                orientation: {
+                    heading: 0.0,
+                    pitch: -Cesium.Math.PI_OVER_FOUR,
+                    roll: 0.0
+                },
+                duration: 2
+            });
+            
+            console.log(`Successfully added ${droneType} drone to map`);
+            return tileset;
+
+        } catch (error) {
+            console.error('Error loading drone model:', error);
+            throw error;
+        }
+    }
+    
+    showNotification(message, type = 'info') {
+        console.log(`Notification: ${message} (${type})`);
+        
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `drone-notification ${type}`;
         notification.textContent = message;
-        notification.className = `config-notification ${type}`;
-        notification.style.display = 'block';
-
-        // Hide after 3 seconds
+        
+        // Add to DOM
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
         setTimeout(() => {
-            notification.style.display = 'none';
+            notification.classList.add('fade-out');
+            setTimeout(() => notification.remove(), 500);
         }, 3000);
     }
+}
 
-    // Public method to get current configuration
-    static getCurrentConfig() {
-        return new DroneConfiguration().getConfiguration();
-    }
-
-    // Validate configuration before applying
-    validateConfiguration(config) {
-        const errors = [];
-        
-        if (config.flight.maxAltitude < 1 || config.flight.maxAltitude > 500) {
-            errors.push('Max altitude must be between 1-500 meters');
-        }
-        
-        if (config.flight.maxSpeed < 1 || config.flight.maxSpeed > 25) {
-            errors.push('Max speed must be between 1-25 m/s');
-        }
-
-        if (config.flight.autoLandBattery < 10 || config.flight.autoLandBattery > 50) {
-            errors.push('Auto land battery must be between 10-50%');
-        }
-
-        return errors;
+// Initialize immediately when script loads
+function initializeDroneManager() {
+    console.log("Initializing drone manager...");
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOM loaded, creating manager");
+            droneConfigManager = new DroneConfigurationManager();
+            window.droneConfigManager = droneConfigManager;
+        });
+    } else {
+        console.log("DOM already loaded, creating manager");
+        droneConfigManager = new DroneConfigurationManager();
+        window.droneConfigManager = droneConfigManager;
     }
 }
 
-// Initialize configuration when loaded
-if (typeof window !== 'undefined') {
-    window.droneConfigInstance = new DroneConfiguration();
-}
-
-// Export for module use
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = DroneConfiguration;
-} 
+// Call initialization function
+initializeDroneManager(); 

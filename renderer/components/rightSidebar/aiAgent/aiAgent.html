@@ -1,113 +1,155 @@
 <div class="ai-agent-panel">
-    <!-- Model Selection Header -->
-    <div class="model-selection-header">
-        <div class="model-selector">
-            <div class="model-option active" data-model="online">
-                <div class="model-icon">
-                    <i class="fas fa-cloud"></i>
-                </div>
-                <div class="model-info">
-                    <span class="model-name">Online</span>
-                    <span class="model-desc">Fast & Accurate</span>
-                </div>
-            </div>
-            <div class="model-option" data-model="offline">
-                <div class="model-icon">
-                    <i class="fas fa-desktop"></i>
-                </div>
-                <div class="model-info">
-                    <span class="model-name">Offline</span>
-                    <span class="model-desc">Slow & Less Accurate</span>
-                </div>
-            </div>
-        </div>
-        <div class="model-status">
-            <div class="status-indicator online"></div>
-            <span id="model-status-text">Online Model Ready</span>
-        </div>
-    </div>
-
-    <!-- Waypoint Management -->
-    <div class="waypoint-section">
+    <!-- Waypoints Section -->
+    <div class="waypoints-section">
         <div class="section-header">
             <h4><i class="fas fa-map-marker-alt"></i> Waypoints</h4>
         </div>
-        <div class="waypoint-list" id="waypoint-list">
-            <div class="waypoint-item sample" style="display: none;">
-                <div class="waypoint-info">
+        <div class="waypoints-container">
+            <div class="waypoints-table-container">
+                <table class="waypoints-table" id="waypoints-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Points</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="waypoints-table-body">
+                        <!-- Waypoints will be populated here -->
+                    </tbody>
+                </table>
+                <div class="empty-state" id="empty-waypoints">
                     <i class="fas fa-map-marker-alt"></i>
-                    <span class="waypoint-name"></span>
-                </div>
-                <div class="waypoint-actions">
-                    <button class="waypoint-action" title="Zoom to waypoint">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="waypoint-action delete" title="Delete waypoint">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <p>No waypoints created yet</p>
+                    <span class="hint">Use the drawing tools on the map to create waypoints</span>
                 </div>
             </div>
         </div>
-        <div class="empty-waypoints" id="empty-waypoints">
-            <i class="fas fa-map-marker-alt"></i>
-            <p>No waypoints created yet</p>
-            <p class="hint">Use the drawing tools on the map to create waypoints</p>
-        </div>
     </div>
 
-    <!-- Chat Interface -->
-    <div class="chat-container">
-        <div class="chat-messages" id="ai-chat-messages">
+    <!-- Chat Section -->
+    <div class="chat-section">
+        <div class="chat-messages" id="chat-messages">
             <div class="message ai-message">
                 <div class="message-avatar">
                     <i class="fas fa-robot"></i>
                 </div>
                 <div class="message-content">
                     <div class="message-text">
-                        <p>Hello! I'm your AI assistant for drone operations.</p>
-                        <p>You can reference waypoints by typing <code>@waypoint-name</code> in your messages.</p>
-                        <p>Use the drawing tools on the map to create new waypoints!</p>
+                        Hello! Type any command and I'll send it to the backend.
                     </div>
                     <div class="message-time">Just now</div>
                 </div>
             </div>
         </div>
 
-        <div class="typing-indicator" id="typing-indicator" style="display: none;">
-            <div class="message ai-message">
-                <div class="message-avatar">
-                    <i class="fas fa-robot"></i>
+    <!-- Chat Input -->
+    <div class="chat-input-area">
+        <div class="unified-input-container">
+            <!-- Top row with @ symbol -->
+            <div class="input-top-row">
+                <button class="context-button" id="context-button" title="Add Context">
+                    <i class="fas fa-at"></i>
+                </button>
+                <span class="input-label">Add Context</span>
+            </div>
+            
+            <!-- Main input field with start/stop button -->
+            <div class="input-with-action-btn">
+                <input type="text" 
+                       class="main-chat-input" 
+                       id="chat-input" 
+                       placeholder="Plan, search, build anything">
+                <button class="start-btn" id="start-button" title="Send">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+                <button class="stop-btn" id="stop-button" title="Stop" style="display: none;">
+                    <i class="fas fa-square"></i>
+                </button>
+            </div>
+            
+            <!-- Bottom row with controls -->
+            <div class="input-bottom-controls">
+                <!-- Mode selection dropdown -->
+                <div class="mode-selector">
+                    <button class="mode-btn" id="mode-dropdown-btn">
+                        <i class="fas fa-infinity"></i>
+                        <span id="selected-mode">Surveillance</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="mode-menu" id="mode-dropdown-menu">
+                        <div class="mode-item" data-mode="surveillance">
+                            <i class="fas fa-eye"></i>
+                            <span>Surveillance</span>
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="mode-item" data-mode="object-detection">
+                            <i class="fas fa-search"></i>
+                            <span>Object Detection</span>
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="mode-item" data-mode="3d-mapping">
+                            <i class="fas fa-cube"></i>
+                            <span>3D Mapping</span>
+                            <i class="fas fa-check"></i>
+                        </div>
+                    </div>
                 </div>
-                <div class="message-content">
-                    <div class="typing-dots">
-                        <span></span>
-                        <span></span>
-                        <span></span>
+                
+                <!-- Right side controls -->
+                <div class="right-controls">
+                    <!-- Model selection dropdown -->
+                    <div class="model-selector">
+                        <button class="model-btn" id="model-dropdown-btn">
+                            <span id="selected-model">Auto</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="model-menu" id="model-dropdown-menu">
+                            <div class="model-item" data-model="auto">Auto</div>
+                            <div class="model-item" data-model="online">Online</div>
+                            <div class="model-item" data-model="offline">Offline</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="chat-input-container">
-            <div class="input-wrapper">
-                <div class="autocomplete-dropdown" id="autocomplete-dropdown" style="display: none;"></div>
-                <input type="text" class="chat-input" placeholder="Type @ to reference waypoints..." id="ai-chat-input">
-                <button class="send-btn" id="ai-send-btn">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
+        
+        <!-- Context dropdown -->
+        <div class="context-dropdown" id="context-dropdown">
+            <div class="context-section">
+                <h4>Waypoints</h4>
+                <div class="context-items" id="waypoints-context">
+                    <!-- Waypoints will be populated here -->
+                </div>
+            </div>
+            <div class="context-section">
+                <h4>Drones</h4>
+                <div class="context-items" id="drones-context">
+                    <!-- Drones will be populated here -->
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Polygon Save Modal -->
-    <div class="polygon-modal" id="polygon-modal" style="display: none;">
+    <!-- Waypoint Save Modal -->
+    <div class="modal-overlay" id="waypoint-modal" style="display: none;">
         <div class="modal-content">
-            <h3>Save Waypoint</h3>
-            <p>Give your polygon waypoint a name:</p>
-            <input type="text" class="waypoint-name-input" id="waypoint-name-input" placeholder="e.g., home, landing-zone, survey-area">
-            <div class="modal-actions">
-                <button class="btn secondary" id="cancel-waypoint">Cancel</button>
-                <button class="btn primary" id="save-waypoint">Save Waypoint</button>
+            <div class="modal-header">
+                <h3>Save Waypoint</h3>
+            </div>
+            <div class="modal-body">
+                <p>Give your waypoint a name:</p>
+                <input type="text" 
+                       class="waypoint-input" 
+                       id="waypoint-input" 
+                       placeholder="e.g., home, landing-zone, survey-area">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-waypoint">Cancel</button>
+                <button class="btn btn-primary" id="save-waypoint">Save Waypoint</button>
             </div>
         </div>
     </div>

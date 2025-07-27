@@ -5,9 +5,12 @@ class TrackMission {
         this.currentPage = 1;
         this.itemsPerPage = 5;
         this.missions = []; // Empty missions array - no sample data
+        this.waypoints = []; // Array to store waypoints from AI agent
+        this.selectedWaypoints = []; // Array to store selected waypoint IDs
         
         this.initializeEventListeners();
         this.updateMissionTable();
+        this.updateWaypointsList();
         
         console.log('Track Mission initialized successfully');
     }
@@ -51,6 +54,22 @@ class TrackMission {
                 this.stopMission();
             } else if (e.target.closest('#resume-mission')) {
                 this.resumeMission();
+            }
+        });
+
+        // Waypoint action listeners
+        document.addEventListener('click', (e) => {
+            if (!document.querySelector('.track-mission-panel')) return;
+            
+            if (e.target.closest('#add-waypoint')) {
+                this.showAddWaypointModal();
+            } else if (e.target.closest('#clear-waypoints')) {
+                this.clearAllWaypoints();
+            } else if (e.target.closest('#send-waypoints')) {
+                this.showSendWaypointsModal();
+            } else if (e.target.closest('.waypoint-select-btn')) {
+                const waypointId = e.target.closest('.waypoint-select-btn').dataset.waypointId;
+                this.toggleWaypointSelection(waypointId);
             }
         });
     }
@@ -168,6 +187,324 @@ class TrackMission {
         // Implementation for resuming mission
     }
 
+    // Waypoint management methods
+    updateWaypointsList(waypoints = null) {
+        if (waypoints !== null) {
+            this.waypoints = waypoints;
+        }
+
+        const waypointsTableBody = document.getElementById('waypoints-table-body');
+        const waypointsTable = document.getElementById('waypoints-table');
+        const emptyWaypoints = document.getElementById('empty-waypoints');
+        
+        if (!waypointsTableBody || !waypointsTable || !emptyWaypoints) return;
+
+        // Clear existing waypoints
+        waypointsTableBody.innerHTML = '';
+
+        if (this.waypoints.length === 0) {
+            waypointsTable.style.display = 'none';
+            emptyWaypoints.style.display = 'block';
+            return;
+        }
+
+        // Show table and hide empty state
+        waypointsTable.style.display = 'table';
+        emptyWaypoints.style.display = 'none';
+
+        // Add waypoints to the table
+        this.waypoints.forEach((waypoint, index) => {
+            const isSelected = this.selectedWaypoints.includes(waypoint.id);
+            
+            const row = document.createElement('tr');
+            row.dataset.waypointId = waypoint.id;
+            
+            row.innerHTML = `
+                <td>
+                    <div class="waypoint-number">${index + 1}</div>
+                </td>
+                <td>
+                    <div class="waypoint-name" data-waypoint-id="${waypoint.id}">
+                        ${waypoint.name || `Waypoint#${index + 1}`}
+                    </div>
+                </td>
+                <td>
+                    <div class="coordinates">
+                        ${waypoint.latitude.toFixed(6)}, ${waypoint.longitude.toFixed(6)}
+                    </div>
+                </td>
+                <td>
+                    <div class="altitude">${waypoint.altitude}m</div>
+                </td>
+                <td class="waypoint-status">
+                    <button class="waypoint-select-btn ${isSelected ? 'selected' : ''}" 
+                            data-waypoint-id="${waypoint.id}" 
+                            title="${isSelected ? 'Deselect' : 'Select'} waypoint">
+                        <i class="fas fa-${isSelected ? 'check-circle' : 'circle'}"></i>
+                    </button>
+                </td>
+                <td class="waypoint-actions-cell">
+                    <button class="waypoint-action-btn edit-btn" 
+                            data-waypoint-id="${waypoint.id}" 
+                            title="Edit waypoint name">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="waypoint-action-btn delete-btn" 
+                            data-waypoint-id="${waypoint.id}" 
+                            title="Delete waypoint">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            waypointsTableBody.appendChild(row);
+        });
+
+        // Add event listeners for the new waypoints
+        this.addWaypointEventListeners();
+
+        // Update waypoint actions
+        this.updateWaypointActions();
+    }
+
+    addWaypointEventListeners() {
+        // Add click listeners for waypoint names (double-click to edit)
+        const waypointNames = document.querySelectorAll('.waypoint-name');
+        waypointNames.forEach(nameElement => {
+            nameElement.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+                this.startEditingWaypointName(nameElement);
+            });
+        });
+
+        // Add click listeners for edit buttons
+        const editButtons = document.querySelectorAll('.waypoint-action-btn.edit-btn');
+        editButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const waypointId = button.dataset.waypointId;
+                const nameElement = document.querySelector(`.waypoint-name[data-waypoint-id="${waypointId}"]`);
+                if (nameElement) {
+                    this.startEditingWaypointName(nameElement);
+                }
+            });
+        });
+
+        // Add click listeners for delete buttons
+        const deleteButtons = document.querySelectorAll('.waypoint-action-btn.delete-btn');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const waypointId = button.dataset.waypointId;
+                this.deleteWaypoint(waypointId);
+            });
+        });
+
+        // Add click listeners for select buttons
+        const selectButtons = document.querySelectorAll('.waypoint-select-btn');
+        selectButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const waypointId = button.dataset.waypointId;
+                this.toggleWaypointSelection(waypointId);
+            });
+        });
+    }
+
+    startEditingWaypointName(nameElement) {
+        const waypointId = nameElement.dataset.waypointId;
+        const currentName = nameElement.textContent.trim();
+        
+        // Create input element
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'waypoint-name-input';
+        input.value = currentName;
+        input.dataset.waypointId = waypointId;
+        
+        // Replace the name element with input
+        nameElement.style.display = 'none';
+        nameElement.parentNode.insertBefore(input, nameElement);
+        
+        // Focus and select all text
+        input.focus();
+        input.select();
+        
+        // Handle save on Enter or blur
+        const saveEdit = () => {
+            const newName = input.value.trim();
+            if (newName && newName !== currentName) {
+                this.updateWaypointName(waypointId, newName);
+            }
+            
+            // Restore the name element
+            nameElement.textContent = newName || currentName;
+            nameElement.style.display = 'block';
+            input.remove();
+        };
+        
+        input.addEventListener('blur', saveEdit);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                saveEdit();
+            } else if (e.key === 'Escape') {
+                // Cancel edit
+                nameElement.style.display = 'block';
+                input.remove();
+            }
+        });
+    }
+
+    updateWaypointName(waypointId, newName) {
+        const waypoint = this.waypoints.find(w => w.id === waypointId);
+        if (waypoint) {
+            waypoint.name = newName;
+            console.log(`Updated waypoint ${waypointId} name to: ${newName}`);
+            
+            // Update the display
+            const nameElement = document.querySelector(`.waypoint-name[data-waypoint-id="${waypointId}"]`);
+            if (nameElement) {
+                nameElement.textContent = newName;
+            }
+        }
+    }
+
+    deleteWaypoint(waypointId) {
+        if (!confirm('Are you sure you want to delete this waypoint?')) {
+            return;
+        }
+
+        // Remove from waypoints array
+        this.waypoints = this.waypoints.filter(w => w.id !== waypointId);
+        
+        // Remove from selected waypoints
+        this.selectedWaypoints = this.selectedWaypoints.filter(id => id !== waypointId);
+        
+        // Update the display
+        this.updateWaypointsList();
+        
+        console.log(`Deleted waypoint: ${waypointId}`);
+    }
+
+    toggleWaypointSelection(waypointId) {
+        const index = this.selectedWaypoints.indexOf(waypointId);
+        if (index > -1) {
+            this.selectedWaypoints.splice(index, 1);
+        } else {
+            this.selectedWaypoints.push(waypointId);
+        }
+        
+        // Update UI
+        this.updateWaypointsList();
+    }
+
+    updateWaypointActions() {
+        const waypointActions = document.querySelector('.waypoint-actions');
+        if (!waypointActions) return;
+
+        // Update or add send waypoints button
+        let sendButton = waypointActions.querySelector('#send-waypoints');
+        if (!sendButton) {
+            sendButton = document.createElement('button');
+            sendButton.id = 'send-waypoints';
+            sendButton.className = 'waypoint-btn';
+            sendButton.innerHTML = '<i class="fas fa-paper-plane"></i> Send to Backend';
+            waypointActions.appendChild(sendButton);
+        }
+
+        // Enable/disable based on selection
+        sendButton.disabled = this.selectedWaypoints.length === 0;
+    }
+
+    showAddWaypointModal() {
+        // This could open a modal to manually add waypoints
+        console.log('Add waypoint modal - not implemented yet');
+    }
+
+    clearAllWaypoints() {
+        if (confirm('Are you sure you want to clear all waypoints?')) {
+            this.waypoints = [];
+            this.selectedWaypoints = [];
+            this.updateWaypointsList();
+            
+            // Also clear from AI agent
+            if (window.AIAgent) {
+                window.AIAgent.clearSelectedWaypoints();
+            }
+        }
+    }
+
+    showSendWaypointsModal() {
+        if (this.selectedWaypoints.length === 0) {
+            alert('Please select at least one waypoint to send.');
+            return;
+        }
+
+        const missionName = prompt('Enter a name for this mission:');
+        if (!missionName) return;
+
+        this.sendWaypointsToBackend(missionName);
+    }
+
+    async sendWaypointsToBackend(missionName) {
+        try {
+            // Get selected waypoints
+            const selectedWaypoints = this.waypoints.filter(w => 
+                this.selectedWaypoints.includes(w.id)
+            );
+
+            if (selectedWaypoints.length === 0) {
+                throw new Error('No waypoints selected');
+            }
+
+            // Convert to backend format
+            const waypointsData = selectedWaypoints.map(waypoint => ({
+                lat: waypoint.latitude,
+                lon: waypoint.longitude,
+                alt: waypoint.altitude
+            }));
+
+            const payload = {
+                "waypoints name": missionName,
+                "waypoints": waypointsData
+            };
+
+            console.log('Sending waypoints to backend:', payload);
+
+            const response = await fetch('http://localhost:8000/waypoints', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('Backend response:', result);
+
+            // Show success message
+            alert(`✅ Mission "${missionName}" saved successfully!\n\nResponse: ${JSON.stringify(result)}`);
+
+            // Add to missions list
+            this.addNewMission({
+                id: Date.now().toString(),
+                name: missionName,
+                status: 'Saved',
+                payload: `${selectedWaypoints.length} waypoints`,
+                battery: '100%',
+                arrivalTime: new Date().toLocaleString()
+            });
+
+        } catch (error) {
+            console.error('Failed to send waypoints to backend:', error);
+            alert(`❌ Failed to send waypoints: ${error.message}`);
+        }
+    }
+
     // Public methods for external API calls
     static getInstance() {
         return window.trackMissionInstance;
@@ -200,6 +537,31 @@ class TrackMission {
         this.missions = missions || [];
         this.currentPage = 1;
         this.updateMissionTable();
+    }
+
+    // Waypoint methods for external access
+    getSelectedWaypoints() {
+        return this.waypoints.filter(w => this.selectedWaypoints.includes(w.id));
+    }
+
+    addWaypoints(waypoints) {
+        // Add default names to waypoints that don't have names
+        const waypointsWithNames = waypoints.map((waypoint, index) => {
+            if (!waypoint.name) {
+                const existingCount = this.waypoints.length;
+                waypoint.name = `Waypoint#${existingCount + index + 1}`;
+            }
+            return waypoint;
+        });
+        
+        this.waypoints = [...this.waypoints, ...waypointsWithNames];
+        this.updateWaypointsList();
+    }
+
+    removeWaypoints(waypointIds) {
+        this.waypoints = this.waypoints.filter(w => !waypointIds.includes(w.id));
+        this.selectedWaypoints = this.selectedWaypoints.filter(id => !waypointIds.includes(id));
+        this.updateWaypointsList();
     }
 }
 

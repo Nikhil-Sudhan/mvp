@@ -93,9 +93,9 @@
     z-index: 1000;
 }
 
-.sidebar.expanded {
+/* .sidebar.expanded {
     width: 320px;
-}
+} */
 
 .sidebar-toggle {
     background: var(--sidebar-bg);
@@ -119,6 +119,12 @@
     border-left: 1px solid var(--border-color);
     left: auto;
     right: 0;
+}
+
+/* Right sidebar content positioning - should come after toggle */
+.right-sidebar .sidebar-content {
+    left: auto;
+    right: 50px;
 }
 
 .sidebar-icon {
@@ -340,3 +346,30 @@
         z-index: 9999;
     }
 } 
+
+/* PATCH: Force right sidebar content to always be visible when expanded */
+.sidebar.right-sidebar.expanded {
+    position: fixed !important;
+    right: 0 !important;
+    top: 35px !important;
+    height: calc(100vh - 35px - 22px) !important;
+    z-index: 2000 !important;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.15);
+    width: 370px !important; /* 50px toggle + 320px content */
+}
+.panel.active {
+    display: flex !important;
+} 
+
+.sidebar.right-sidebar.expanded .sidebar-content {
+    left: auto !important;
+    right: 50px !important;
+    width: 320px !important;
+} 
+
+/* Move map controls when right sidebar is expanded */
+body.right-sidebar-expanded .map-controls {
+    right: 370px !important;
+    transition: right 0.3s ease;
+}
+

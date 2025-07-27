@@ -1,0 +1,236 @@
+/* Map Controls Styles */
+.map-controls {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+.control-panel {
+    background-color: rgba(45, 45, 45, 0.95);
+    border: 1px solid rgba(70, 70, 71, 0.8);
+    border-radius: 8px;
+    padding: 8px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 40px;
+}
+
+.control-group {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.drawing-tools-group {
+    border-top: 1px solid rgba(70, 70, 71, 0.5);
+    padding-top: 8px;
+    margin-top: 4px;
+}
+
+.map-btn {
+    background: rgba(60, 60, 60, 0.8);
+    border: 1px solid rgba(80, 80, 80, 0.6);
+    color: #cccccc;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    user-select: none;
+    outline: none;
+}
+
+.map-btn:hover {
+    background-color: rgba(80, 80, 80, 0.9);
+    color: #ffffff;
+    border-color: rgba(100, 100, 100, 0.8);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.map-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.map-btn.active {
+    background-color: #007acc;
+    color: #ffffff;
+    border-color: #005a9e;
+    box-shadow: 0 0 8px rgba(0, 122, 204, 0.3);
+}
+
+.map-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Drawing tool specific styles */
+.draw-tool-btn {
+    position: relative;
+}
+
+.draw-tool-btn.active {
+    background-color: #007acc;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(0, 122, 204, 0.3);
+}
+
+.draw-tool-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 2px;
+    background-color: #007acc;
+    border-radius: 1px;
+}
+
+.erase-btn:hover {
+    background-color: rgba(204, 68, 68, 0.8);
+    color: #ffffff;
+    border-color: rgba(204, 68, 68, 0.8);
+}
+
+.erase-btn.active {
+    background-color: #cc4444;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(204, 68, 68, 0.3);
+}
+
+.clear-all-btn:hover {
+    background-color: rgba(204, 68, 68, 0.8);
+    color: #ffffff;
+    border-color: rgba(204, 68, 68, 0.8);
+}
+
+/* Tooltip styles */
+.map-btn[title]:hover::before {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1001;
+    margin-bottom: 4px;
+}
+
+.map-btn[title]:hover::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+    margin-bottom: -4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .map-controls {
+        top: 10px;
+        right: 10px;
+    }
+    
+    .control-panel {
+        padding: 6px;
+        gap: 6px;
+    }
+    
+    .map-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+    
+    .control-group {
+        gap: 3px;
+    }
+}
+
+/* Animation for button states */
+@keyframes buttonPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.map-btn.active {
+    animation: buttonPulse 0.3s ease-in-out;
+}
+
+/* Loading state */
+.map-btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.map-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    border: 2px solid transparent;
+    border-top: 2px solid #007acc;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Fullscreen adjustments */
+.fullscreen .map-controls {
+    top: 20px;
+    right: 20px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .map-btn {
+        border-width: 2px;
+    }
+    
+    .map-btn.active {
+        border-width: 3px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .map-btn {
+        transition: none;
+    }
+    
+    .map-btn:hover {
+        transform: none;
+    }
+    
+    .map-btn.active {
+        animation: none;
+    }
+} 

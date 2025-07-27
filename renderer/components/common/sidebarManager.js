@@ -196,15 +196,88 @@ class SidebarManager {
                 visibility: visible !important;
                 opacity: 1 !important;
             }
+            
+            /* Emergency drone configuration visibility CSS */
+            .drone-config-panel {
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                background: #1a1a1a !important;
+                color: white !important;
+                height: 100% !important;
+                overflow-y: auto !important;
+            }
+            
+            .drone-fleet-section {
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                padding: 16px !important;
+                background: linear-gradient(135deg, rgba(30, 30, 35, 0.8) 0%, rgba(20, 20, 25, 0.9) 100%) !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+                margin-bottom: 8px !important;
+            }
+            
+            .drone-grid {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+                gap: 12px !important;
+            }
+            
+            .drone-card.elegant {
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                background: linear-gradient(145deg, rgba(40, 44, 52, 0.95) 0%, rgba(32, 36, 44, 0.98) 100%) !important;
+                border: 1px solid rgba(255, 255, 255, 0.06) !important;
+                border-radius: 12px !important;
+                padding: 14px !important;
+            }
+            
+            .config-content {
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                padding: 15px !important;
+                max-height: calc(100vh - 200px) !important;
+                overflow-y: auto !important;
+            }
+            
+            .config-section {
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                margin-bottom: 25px !important;
+                background: #2a2a2a !important;
+                border: 1px solid #444 !important;
+                border-radius: 8px !important;
+                padding: 15px !important;
+            }
+            
+            .add-drone-btn {
+                background-color: #2c3e50 !important;
+                color: white !important;
+                border: none !important;
+                padding: 8px 15px !important;
+                border-radius: 4px !important;
+                cursor: pointer !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 8px !important;
+                font-size: 14px !important;
+                font-weight: bold !important;
+            }
         `;
         document.head.appendChild(emergencyCSS);
-        console.log('Emergency CSS injected for dashboard visibility');
+        console.log('Emergency CSS injected for dashboard and drone configuration visibility');
     }
 
     async toggleLeftSidebar(panelName) {
         const sidebar = document.getElementById('leftSidebar');
         const isExpanded = sidebar.classList.contains('expanded');
         const isSamePanel = this.currentLeftPanel === panelName;
+
+        console.log(`Toggling left sidebar: ${panelName}, isExpanded: ${isExpanded}, isSamePanel: ${isSamePanel}`);
 
         if (isExpanded && isSamePanel) {
             // Collapse if clicking the same panel
@@ -237,6 +310,22 @@ class SidebarManager {
             // Adjust width after everything is loaded - use setTimeout to ensure DOM is ready
             setTimeout(() => {
                 this.adjustExtendedSidebarWidth();
+                
+                // Additional debugging for drone configuration
+                if (panelName === 'droneConfiguration') {
+                    console.log('Drone configuration panel should now be visible');
+                    const dronePanel = document.querySelector('.drone-config-panel');
+                    const addDroneBtn = document.getElementById('addDroneBtn');
+                    const droneCards = document.querySelectorAll('.drone-card');
+                    
+                    console.log('Drone configuration elements check:', {
+                        dronePanel: !!dronePanel,
+                        addDroneBtn: !!addDroneBtn,
+                        droneCards: droneCards.length,
+                        sidebarExpanded: sidebar.classList.contains('expanded'),
+                        droneConfigExtended: sidebar.classList.contains('drone-config-extended')
+                    });
+                }
             }, 100);
         }
         
@@ -247,26 +336,23 @@ class SidebarManager {
         const sidebar = document.getElementById('rightSidebar');
         const isExpanded = sidebar.classList.contains('expanded');
         const isSamePanel = this.currentRightPanel === panelName;
-
+    
         if (isExpanded && isSamePanel) {
-            // Collapse if clicking the same panel
             sidebar.classList.remove('expanded');
+            document.body.classList.remove('right-sidebar-expanded'); // REMOVE class
             this.currentRightPanel = null;
             console.log('Collapsed right sidebar');
         } else {
-            // Expand and show panel
             sidebar.classList.add('expanded');
+            document.body.classList.add('right-sidebar-expanded'); // ADD class
             await this.showRightPanel(panelName);
             console.log('Expanded right sidebar');
         }
-        
-        // Adjust left sidebar width if it's extended - use setTimeout for proper timing
-        setTimeout(() => {
-            this.adjustExtendedSidebarWidth();
-        }, 100);
-        
+    
+        // No need to modify left sidebar width here
         this.updateActiveIcons('right', panelName);
     }
+    
 
     async showLeftPanel(panelName) {
         const content = document.getElementById('leftSidebarContent');
@@ -308,6 +394,53 @@ class SidebarManager {
 
         container.appendChild(panelDiv);
         
+        // Special handling for drone configuration
+        if (panelName === 'droneConfiguration') {
+            console.log('Drone configuration panel loaded, checking for elements...');
+            setTimeout(() => {
+                const addDroneBtn = document.getElementById('addDroneBtn');
+                const droneDropdown = document.getElementById('droneDropdown');
+                const droneCards = document.querySelectorAll('.drone-card');
+                
+                console.log('Drone configuration elements found:', {
+                    addDroneBtn: !!addDroneBtn,
+                    droneDropdown: !!droneDropdown,
+                    droneCards: droneCards.length
+                });
+                
+                if (addDroneBtn) {
+                    console.log('Add drone button found and should be functional');
+                } else {
+                    console.error('Add drone button not found!');
+                }
+            }, 100);
+        }
+        
+        // Initialize AIAgent specifically
+        if (panelName === 'aiAgent') {
+            setTimeout(() => {
+                console.log('=== AIAgent Initialization ===');
+                console.log('Checking for AIAgent class...');
+                console.log('window.AIAgent:', window.AIAgent);
+                console.log('typeof AIAgent:', typeof AIAgent);
+                console.log('window.aiAgentInstance before:', window.aiAgentInstance);
+                
+                if (typeof AIAgent !== 'undefined') {
+                    try {
+                        window.aiAgentInstance = new AIAgent();
+                        console.log('AIAgent initialized successfully');
+                        console.log('aiAgent instance:', window.aiAgentInstance);
+                        console.log('aiAgent waypoints:', window.aiAgentInstance.waypoints);
+                        
+                    } catch (error) {
+                        console.error('Error initializing AIAgent:', error);
+                    }
+                } else {
+                    console.error('AIAgent class not found');
+                }
+            }, 200);
+        }
+        
         console.log(`Panel ${panelName} loaded successfully`);
         console.log('Panel content:', panelDiv.innerHTML.substring(0, 200) + '...');
     }
@@ -321,7 +454,7 @@ class SidebarManager {
             
             if (response.ok) {
                 const html = await response.text();
-                console.log(`Loaded HTML successfully from file: ${path}`);
+                console.log(`Loaded HTML successfully from file: ${path}, length: ${html.length}`);
                 container.innerHTML = html;
             } else {
                 // Fallback to placeholder content
@@ -503,11 +636,215 @@ class SidebarManager {
 
     getDroneConfigHTML() {
         return `
-            <div class="panel-header">
-                <h3><i class="fas fa-cogs"></i> Drone Configuration</h3>
-            </div>
-            <div class="config-content">
-                <p>Drone Configuration component loaded successfully!</p>
+            <div class="drone-config-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-cogs"></i> Drone Configuration</h3>
+                    <!-- Add Drone Button and Dropdown -->
+                    <div class="add-drone-container">
+                        <button id="addDroneBtn" class="add-drone-btn">
+                            <i class="fas fa-plus"></i> Add Drone
+                        </button>
+                        <div id="droneDropdown" class="drone-dropdown hidden">
+                            <div class="drone-option" data-drone="hovermax">
+                                <img src="../../../../assets/hovermax.png" alt="Hovermax" class="option-img">
+                                <span>Hovermax</span>
+                            </div>
+                            <div class="drone-option" data-drone="phantom-x2">
+                                <img src="../../../../assets/panthom x2.png" alt="Phantom X2" class="option-img">
+                                <span>Phantom X2</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Elegant Drone List Section -->
+                <div class="drone-fleet-section">
+                    <div class="section-header">
+                        <h4>Active Fleet</h4>
+                        <span class="drone-count">2 Drones</span>
+                    </div>
+                    
+                    <div class="drone-grid">
+                        <!-- Phantom X2 Card -->
+                        <div class="drone-card elegant">
+                            <div class="card-header">
+                                <div class="drone-avatar">
+                                    <img src="../../../../assets/panthom x2.png" alt="Phantom X2" class="drone-img">
+                                    <div class="status-badge active">
+                                        <div class="status-dot"></div>
+                                    </div>
+                                </div>
+                                <div class="drone-title">
+                                    <h5>Phantom X2</h5>
+                                    <span class="drone-id">ID: hR49dfY5</span>
+                                </div>
+                            </div>
+                            
+                            <div class="card-metrics">
+                                <div class="metric">
+                                    <div class="metric-icon battery">
+                                        <i class="fas fa-battery-three-quarters"></i>
+                                    </div>
+                                    <div class="metric-info">
+                                        <span class="value">78%</span>
+                                        <span class="label">Battery</span>
+                                    </div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-icon signal">
+                                        <i class="fas fa-wifi"></i>
+                                    </div>
+                                    <div class="metric-info">
+                                        <span class="value">Strong</span>
+                                        <span class="label">Signal</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card-specs">
+                                <div class="spec-row">
+                                    <span>Range</span>
+                                    <span class="spec-value">15 km</span>
+                                </div>
+                                <div class="spec-row">
+                                    <span>Payload</span>
+                                    <span class="spec-value">2.5 kg</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hovermax Card -->
+                        <div class="drone-card elegant">
+                            <div class="card-header">
+                                <div class="drone-avatar">
+                                    <img src="../../../../assets/hovermax.png" alt="Hovermax" class="drone-img">
+                                    <div class="status-badge active">
+                                        <div class="status-dot"></div>
+                                    </div>
+                                </div>
+                                <div class="drone-title">
+                                    <h5>Hovermax</h5>
+                                    <span class="drone-id">ID: hR49dfY5</span>
+                                </div>
+                            </div>
+                            
+                            <div class="card-metrics">
+                                <div class="metric">
+                                    <div class="metric-icon battery">
+                                        <i class="fas fa-battery-three-quarters"></i>
+                                    </div>
+                                    <div class="metric-info">
+                                        <span class="value">78%</span>
+                                        <span class="label">Battery</span>
+                                    </div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-icon signal">
+                                        <i class="fas fa-wifi"></i>
+                                    </div>
+                                    <div class="metric-info">
+                                        <span class="value">Strong</span>
+                                        <span class="label">Signal</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card-specs">
+                                <div class="spec-row">
+                                    <span>Range</span>
+                                    <span class="spec-value">15 km</span>
+                                </div>
+                                <div class="spec-row">
+                                    <span>Payload</span>
+                                    <span class="spec-value">2.5 kg</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-content">
+                    <div class="config-section">
+                        <h4><i class="fas fa-wifi"></i> Connection Settings</h4>
+                        <div class="config-group">
+                            <label>Connection Type:</label>
+                            <select id="connection-type">
+                                <option value="usb">USB</option>
+                                <option value="wifi">WiFi</option>
+                                <option value="radio">Radio</option>
+                                <option value="bluetooth">Bluetooth</option>
+                            </select>
+                        </div>
+                        <div class="config-group">
+                            <label>Port/Address:</label>
+                            <input type="text" id="connection-address" placeholder="COM3 or 192.168.1.100">
+                        </div>
+                        <div class="config-group">
+                            <label>Baud Rate:</label>
+                            <select id="baud-rate">
+                                <option value="9600">9600</option>
+                                <option value="57600" selected>57600</option>
+                                <option value="115200">115200</option>
+                                <option value="460800">460800</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <h4><i class="fas fa-sliders-h"></i> Flight Parameters</h4>
+                        <div class="config-group">
+                            <label>Max Altitude (m):</label>
+                            <input type="number" id="max-altitude" value="120" min="1" max="500">
+                        </div>
+                        <div class="config-group">
+                            <label>Max Speed (m/s):</label>
+                            <input type="number" id="max-speed" value="15" min="1" max="25" step="0.5">
+                        </div>
+                        <div class="config-group">
+                            <label>Return Home Altitude (m):</label>
+                            <input type="number" id="rth-altitude" value="50" min="10" max="200">
+                        </div>
+                        <div class="config-group">
+                            <label>Auto Land Battery (%):</label>
+                            <input type="number" id="auto-land-battery" value="20" min="10" max="50">
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <h4><i class="fas fa-shield-alt"></i> Safety Settings</h4>
+                        <div class="config-group checkbox-group">
+                            <input type="checkbox" id="geofence" checked>
+                            <label for="geofence">Enable Geofence</label>
+                        </div>
+                        <div class="config-group checkbox-group">
+                            <input type="checkbox" id="obstacle-avoidance" checked>
+                            <label for="obstacle-avoidance">Obstacle Avoidance</label>
+                        </div>
+                        <div class="config-group checkbox-group">
+                            <input type="checkbox" id="auto-rth" checked>
+                            <label for="auto-rth">Auto Return Home</label>
+                        </div>
+                        <div class="config-group checkbox-group">
+                            <input type="checkbox" id="motor-cutoff">
+                            <label for="motor-cutoff">Emergency Motor Cutoff</label>
+                        </div>
+                    </div>
+
+                    <div class="config-actions">
+                        <button class="config-btn save-btn" id="save-config">
+                            <i class="fas fa-save"></i>
+                            Save Configuration
+                        </button>
+                        <button class="config-btn load-btn" id="load-config">
+                            <i class="fas fa-upload"></i>
+                            Load Configuration
+                        </button>
+                        <button class="config-btn reset-btn" id="reset-config">
+                            <i class="fas fa-undo"></i>
+                            Reset to Default
+                        </button>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -580,13 +917,13 @@ class SidebarManager {
         return `
             <div class="ai-agent-panel">
                 <!-- Model Selection Header -->
-                <div class="model-selection-header">
-                    <div class="model-selector">
+                <div class="model-header">
+                    <div class="model-options">
                         <div class="model-option active" data-model="online">
                             <div class="model-icon">
                                 <i class="fas fa-cloud"></i>
                             </div>
-                            <div class="model-info">
+                            <div class="model-details">
                                 <span class="model-name">Online</span>
                                 <span class="model-desc">Fast & Accurate</span>
                             </div>
@@ -595,64 +932,58 @@ class SidebarManager {
                             <div class="model-icon">
                                 <i class="fas fa-desktop"></i>
                             </div>
-                            <div class="model-info">
+                            <div class="model-details">
                                 <span class="model-name">Offline</span>
                                 <span class="model-desc">Slow & Less Accurate</span>
                             </div>
                         </div>
                     </div>
                     <div class="model-status">
-                        <div class="status-indicator online"></div>
-                        <span id="model-status-text">Online Model Ready</span>
+                        <div class="status-dot online"></div>
+                        <span class="status-text">Online Model Ready</span>
                     </div>
                 </div>
 
-                <!-- Waypoint Management -->
-                <div class="waypoint-section">
+                <!-- Waypoints Section -->
+                <div class="waypoints-section">
                     <div class="section-header">
                         <h4><i class="fas fa-map-marker-alt"></i> Waypoints</h4>
                     </div>
-                    <div class="waypoint-list" id="waypoint-list">
-                        <div class="waypoint-item sample" style="display: none;">
-                            <div class="waypoint-info">
-                                <i class="fas fa-map-marker-alt"></i>
-                                <span class="waypoint-name"></span>
-                            </div>
-                            <div class="waypoint-actions">
-                                <button class="waypoint-action" title="Zoom to waypoint">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="waypoint-action delete" title="Delete waypoint">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
+                    <div class="waypoints-container">
+                        <div class="waypoints-list" id="waypoints-list">
+                            <!-- Waypoints will be populated here -->
                         </div>
-                    </div>
-                    <div class="empty-waypoints" id="empty-waypoints">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <p>No waypoints created yet</p>
-                        <p class="hint">Use the drawing tools on the map to create waypoints</p>
+                        <div class="empty-state" id="empty-waypoints">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <p>No waypoints created yet</p>
+                            <span class="hint">Use the drawing tools on the map to create waypoints</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Chat Interface -->
-                <div class="chat-container">
-                    <div class="chat-messages" id="ai-chat-messages">
+                <!-- Chat Section -->
+                <div class="chat-section">
+                    <div class="chat-messages" id="chat-messages">
                         <div class="message ai-message">
                             <div class="message-avatar">
                                 <i class="fas fa-robot"></i>
                             </div>
                             <div class="message-content">
                                 <div class="message-text">
-                                    <p>Hello! I'm your AI assistant for drone operations.</p>
-                                    <p>You can reference waypoints by typing <code>@waypoint-name</code> in your messages.</p>
-                                    <p>Use the drawing tools on the map to create new waypoints!</p>
+                                    Hello! I'm your AI assistant for drone operations.
+                                </div>
+                                <div class="message-text">
+                                    You can reference waypoints by typing <code>@waypoint-name</code> in your messages.
+                                </div>
+                                <div class="message-text">
+                                    Use the drawing tools on the map to create new waypoints!
                                 </div>
                                 <div class="message-time">Just now</div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Typing Indicator -->
                     <div class="typing-indicator" id="typing-indicator" style="display: none;">
                         <div class="message ai-message">
                             <div class="message-avatar">
@@ -668,26 +999,37 @@ class SidebarManager {
                         </div>
                     </div>
 
-                    <div class="chat-input-container">
-                        <div class="input-wrapper">
-                            <div class="autocomplete-dropdown" id="autocomplete-dropdown" style="display: none;"></div>
-                            <input type="text" class="chat-input" placeholder="Type @ to reference waypoints..." id="ai-chat-input">
-                            <button class="send-btn" id="ai-send-btn">
+                    <!-- Chat Input -->
+                    <div class="chat-input-area">
+                        <div class="input-container">
+                            <div class="autocomplete-dropdown" id="autocomplete-dropdown"></div>
+                            <input type="text" 
+                                   class="chat-input" 
+                                   id="chat-input" 
+                                   placeholder="Type @ to reference waypoints...">
+                            <button class="send-button" id="send-button">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Polygon Save Modal -->
-                <div class="polygon-modal" id="polygon-modal" style="display: none;">
+                <!-- Waypoint Save Modal -->
+                <div class="modal-overlay" id="waypoint-modal" style="display: none;">
                     <div class="modal-content">
-                        <h3>Save Waypoint</h3>
-                        <p>Give your polygon waypoint a name:</p>
-                        <input type="text" class="waypoint-name-input" id="waypoint-name-input" placeholder="e.g., home, landing-zone, survey-area">
-                        <div class="modal-actions">
-                            <button class="btn secondary" id="cancel-waypoint">Cancel</button>
-                            <button class="btn primary" id="save-waypoint">Save Waypoint</button>
+                        <div class="modal-header">
+                            <h3>Save Waypoint</h3>
+                        </div>
+                        <div class="modal-body">
+                            <p>Give your waypoint a name:</p>
+                            <input type="text" 
+                                   class="waypoint-input" 
+                                   id="waypoint-input" 
+                                   placeholder="e.g., home, landing-zone, survey-area">
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" id="cancel-waypoint">Cancel</button>
+                            <button class="btn btn-primary" id="save-waypoint">Save Waypoint</button>
                         </div>
                     </div>
                 </div>

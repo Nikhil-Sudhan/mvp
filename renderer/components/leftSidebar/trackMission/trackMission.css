@@ -337,22 +337,165 @@
     color: white;
 }
 
-.waypoints-list {
-    max-height: 200px;
+.waypoints-table-container {
+    max-height: 300px;
     overflow-y: auto;
     margin-bottom: 10px;
-}
-
-.waypoint-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    margin-bottom: 6px;
-    background: var(--sidebar-bg);
 }
+
+.waypoints-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.waypoints-table th {
+    background: var(--sidebar-bg);
+    color: var(--text-secondary);
+    padding: 8px 4px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.waypoints-table td {
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 11px;
+    color: var(--text-primary);
+    vertical-align: middle;
+}
+
+.waypoints-table tbody tr:hover {
+    background: var(--button-hover-bg);
+}
+
+.waypoint-number {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.waypoint-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 2px;
+    transition: background 0.2s ease;
+}
+
+.waypoint-name:hover {
+    background: var(--button-hover-bg);
+}
+
+.waypoint-name.editing {
+    background: var(--editor-bg);
+    border: 1px solid var(--accent-color);
+    outline: none;
+    padding: 1px 3px;
+}
+
+.waypoint-name-input {
+    background: var(--editor-bg);
+    border: 1px solid var(--accent-color);
+    color: var(--text-primary);
+    font-size: 11px;
+    padding: 1px 3px;
+    border-radius: 2px;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.coordinates {
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-family: monospace;
+}
+
+.altitude {
+    font-size: 10px;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.waypoint-status {
+    text-align: center;
+}
+
+.waypoint-select-btn {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    background: var(--button-bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    transition: all 0.2s ease;
+}
+
+.waypoint-select-btn:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.waypoint-select-btn.selected {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+.waypoint-actions-cell {
+    text-align: center;
+}
+
+.waypoint-action-btn {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    background: var(--button-bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    margin: 0 1px;
+    transition: all 0.2s ease;
+}
+
+.waypoint-action-btn:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.waypoint-action-btn.delete-btn:hover {
+    border-color: var(--error-color);
+    color: var(--error-color);
+}
+
+
 
 .waypoint-number {
     width: 24px;
@@ -369,12 +512,16 @@
 
 .waypoint-info {
     flex: 1;
+    min-width: 0;
 }
 
 .coordinates {
     font-size: 13px;
     color: var(--text-primary);
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .altitude {
@@ -382,17 +529,69 @@
     color: var(--text-secondary);
 }
 
-.waypoint-status i {
-    font-size: 8px;
+.waypoint-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.waypoint-status {
+    display: flex;
+    align-items: center;
+}
+
+.waypoint-select-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    background: var(--button-bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: all 0.2s ease;
+}
+
+.waypoint-select-btn:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.waypoint-select-btn.selected {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+.waypoint-select-btn.selected:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
+
+.empty-waypoints {
+    text-align: center;
+    padding: 20px;
     color: var(--text-secondary);
 }
 
-.waypoint-status i.completed {
-    color: var(--success-color);
+.empty-waypoints i {
+    font-size: 24px;
+    margin-bottom: 8px;
+    opacity: 0.5;
 }
 
-.waypoint-status i.current {
-    color: var(--accent-color);
+.empty-waypoints p {
+    margin: 8px 0 4px 0;
+    font-weight: 500;
+}
+
+.empty-waypoints span {
+    font-size: 11px;
+    opacity: 0.7;
 }
 
 .waypoint-actions {
@@ -416,9 +615,26 @@
     transition: all 0.2s ease;
 }
 
-.waypoint-btn:hover {
+.waypoint-btn:hover:not(:disabled) {
     background: var(--button-hover-bg);
     border-color: var(--accent-color);
+}
+
+.waypoint-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#send-waypoints {
+    grid-column: 1 / -1;
+    background: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+}
+
+#send-waypoints:hover:not(:disabled) {
+    background: var(--success-hover);
+    border-color: var(--success-hover);
 }
 
 .missions-container {
