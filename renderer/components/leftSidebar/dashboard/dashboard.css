@@ -1,18 +1,33 @@
 .dashboard-panel {
+    position: relative;
     height: 100%;
     background: #1a1a1a;
     color: #ffffff;
+    overflow: hidden;
 }
 
 .dashboard-content {
+    position: absolute;
+    top: 60px; /* Make sure this exactly matches the header height */
+    left: 0;
+    right: 0;
+    bottom: 0;
     padding: 20px;
-    height: calc(100vh - 60px);
+    margin: 0; /* Ensure no margin */
     overflow-y: auto;
+    overflow-x: hidden;
+    background: #1a1a1a; /* Ensure background matches */
 }
 
 /* Greeting Section */
 .dashboard-greeting {
-    margin-bottom: 24px;
+    position: static; /* Remove fixed positioning */
+    background: transparent; /* Remove background */
+    border: none; /* Remove border */
+    padding: 0 0 20px 0; /* Just bottom padding */
+    margin-bottom: 24px; /* Space before stat cards */
+    font-size: 18px;
+    color: #cccccc;
 }
 
 .dashboard-greeting h2 {
@@ -26,11 +41,34 @@
     font-weight: 600;
 }
 
+.dashboard-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #1a1a1a;
+    border-bottom: 1px solid #333; /* Add this line back */
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 100;
+    margin: 0; /* Ensure no margin */
+}
+
+.dashboard-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0;
+}
+
+
 /* Mission Statistics */
 .mission-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
+    gap: 32px;
     margin-bottom: 32px;
 }
 
@@ -40,6 +78,9 @@
     border-radius: 8px;
     padding: 20px 16px;
     text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .stat-card.ongoing {
@@ -59,7 +100,8 @@
 }
 
 .stat-header {
-    margin-bottom: 8px;
+    margin-bottom: 0;
+    flex: 1;
 }
 
 .stat-label {
@@ -74,6 +116,7 @@
     font-weight: 700;
     color: #ffffff;
     line-height: 1;
+    margin-left: 16px;
 }
 
 /* Mission Table */

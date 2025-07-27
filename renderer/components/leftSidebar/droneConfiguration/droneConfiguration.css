@@ -1,11 +1,44 @@
 .drone-config-panel {
-    height: 100%;
-    position: relative;
+    width: 50%; /* Limit to first half of screen */
+    height: 100vh;
+    position: fixed; /* Fix to left side */
+    left: 0;
+    top: 0;
+    background: #1a1a1a;
+    color: #ffffff;
+    overflow: hidden; /* Remove outer scrollbar */
+    z-index: 10;
+}
+
+.drone-config-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 50%; /* Match panel width */
+    height: 60px;
+    background: #1a1a1a;
+    border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 100;
+}
+
+.drone-config-panel,
+.drone-config-header {           /* header must match panel */
+    width: 50vw;                 /* 50 % of the viewport */
+}
+
+.drone-config-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0;
 }
 
 /* Elegant Drone Fleet Section */
 .drone-fleet-section {
-    padding: 16px;
+    padding: 12px; /* Reduce padding for smaller width */
     background: linear-gradient(135deg, rgba(30, 30, 35, 0.8) 0%, rgba(20, 20, 25, 0.9) 100%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     margin-bottom: 8px;
@@ -37,8 +70,8 @@
 
 .drone-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* Smaller min-width for half screen */
+    gap: 10px; /* Reduce gap for compact layout */
 }
 
 /* Elegant Drone Cards */
@@ -370,9 +403,26 @@
 }
 
 .config-content {
+    position: absolute;
+    top: 60px; /* Start below fixed header */
+    left: 0;
+    right: 0;
+    bottom: 0;
     padding: 15px;
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
+    overflow-y: auto; /* Keep only inner scrollbar */
+    overflow-x: hidden; /* Prevent horizontal scroll */
+    background: #1a1a1a;
+}
+
+.drone-config-panel {
+    overflow: hidden;            /* hide outer bar          */
+}
+.config-content {
+    position: absolute;
+    top: 60px;                   /* below fixed header      */
+    left: 0; right: 0; bottom: 0;
+    overflow-y: auto;            /* one clean vertical bar  */
+    overflow-x: hidden;
 }
 
 /* Extended sidebar for drone configuration */
@@ -384,18 +434,27 @@
 
 .sidebar.expanded.drone-config-extended .config-content {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    padding: 20px;
+    grid-template-columns: 1fr; /* Single column for half-width */
+    gap: 15px; /* Reduce gap */
+    padding: 15px;
     max-height: none;
 }
 
 .config-section {
-    margin-bottom: 25px;
+    margin-bottom: 20px; /* Reduce margin */
     background: var(--editor-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 15px;
+    padding: 12px; /* Reduce padding */
+}
+
+.drone-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+.config-section {
+    padding: 16px;
+    margin-bottom: 24px;
 }
 
 .config-section h4 {
@@ -470,6 +529,16 @@
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
+}
+
+.config-content {
+    display: flex;
+    flex-direction: column;      /* vertical stack          */
+    padding: 20px;               /* regular (not “shrunk”)  */
+}
+.config-actions {                /* wrapper that holds 3 buttons */
+    margin-top: auto;            /* pushes itself downward  */
+    padding-bottom: 20px;        /* equals top padding      */
 }
 
 .config-btn {

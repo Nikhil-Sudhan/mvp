@@ -1,7 +1,14 @@
+.telemetry-panel *,
+.telemetry-panel *::before,
+.telemetry-panel *::after {
+    box-sizing: border-box;
+}
+
 .telemetry-panel {
     height: 100%;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .panel-header {
@@ -62,6 +69,7 @@
 .telemetry-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 15px;
 }
 
@@ -71,6 +79,8 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 15px;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .telemetry-section h4 {
@@ -306,8 +316,9 @@
 
 .export-options {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));;
     gap: 8px;
+    box-sizing: border-box;
 }
 
 .export-btn {
@@ -362,4 +373,13 @@
     .export-options {
         grid-template-columns: 1fr;
     }
-} 
+    
+    /* Add padding adjustments for smaller screens */
+    .telemetry-content {
+        padding: 10px;
+    }
+    
+    .telemetry-section {
+        padding: 10px;
+    }
+}
