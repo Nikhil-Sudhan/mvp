@@ -1,0 +1,36 @@
+/* Status Bar */
+.status-bar {
+    display: flex;
+    align-items: center;
+    height: 22px;
+    background-color: #007acc;
+    color: white;
+    font-size: 12px;
+    padding: 0 15px;
+    position: relative;
+    z-index: 2000;
+}
+
+.status-left,
+.status-center,
+.status-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.status-center {
+    flex: 1;
+    justify-content: center;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+.status-connected {
+    color: #4caf50;
+}

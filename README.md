@@ -1,4 +1,4 @@
-# Sky Loom - Drone Control IDE
+# Avionixis - Drone Control IDE
 
 A Cursor IDE-inspired interface for drone control, built with Electron.
 
@@ -32,7 +32,7 @@ A Cursor IDE-inspired interface for drone control, built with Electron.
 ### Interface Layout
 
 - **Top Bar**: 
-  - Left: Sky Loom application name
+  - Left: Avionixis application name
   - Center: Command palette (search bar)
   - Right: Window controls and settings
 
@@ -83,7 +83,7 @@ A Cursor IDE-inspired interface for drone control, built with Electron.
 
 ### Project Structure
 ```
-Sky Loom/
+Avionixis/
 ├── main.js              # Electron main process
 ├── package.json         # Project configuration
 ├── renderer/

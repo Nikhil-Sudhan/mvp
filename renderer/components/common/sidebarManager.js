@@ -37,22 +37,11 @@ class SidebarManager {
         
         // Initialize with clean state - only logo visible
         setTimeout(() => {
-            console.log('Initializing clean application state...');
-            // Ensure sidebars are collapsed initially
+           
             const leftSidebar = document.getElementById('leftSidebar');
             const rightSidebar = document.getElementById('rightSidebar');
             
-            if (leftSidebar) {
-                leftSidebar.classList.remove('expanded');
-                console.log('Left sidebar initialized in collapsed state');
-            }
             
-            if (rightSidebar) {
-                rightSidebar.classList.remove('expanded');
-                console.log('Right sidebar initialized in collapsed state');
-            }
-            
-            console.log('Application ready - only logo visible');
         }, 100);
     }
 
@@ -97,6 +86,8 @@ class SidebarManager {
         leftSidebar.appendChild(leftToggle);
         leftSidebar.appendChild(leftContent);
 
+
+
         // Create right sidebar
         const rightSidebar = document.createElement('div');
         rightSidebar.className = 'sidebar right-sidebar';
@@ -107,7 +98,7 @@ class SidebarManager {
         rightToggle.innerHTML = `
             <div class="sidebar-icons">
                 <button class="sidebar-icon" title="AI Agent" data-panel="aiAgent">
-                    <i class="fas fa-robot"></i>
+                    <i class="fas fa-robot"></i> 
                 </button>
                 <button class="sidebar-icon" title="Telemetry" data-panel="telemetry">
                     <i class="fas fa-chart-line"></i>
@@ -163,121 +154,12 @@ class SidebarManager {
             document.head.appendChild(link);
         }
         
-        // EMERGENCY CSS INJECTION
-        const emergencyCSS = document.createElement('style');
-        emergencyCSS.textContent = `
-            /* Emergency dashboard visibility CSS */
-            .sidebar.expanded {
-                width: 320px !important;
-            }
-            .sidebar.expanded .sidebar-content {
-                opacity: 1 !important;
-                pointer-events: auto !important;
-                display: block !important;
-            }
-            .dashboard-panel {
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                background: #1a1a1a !important;
-                color: white !important;
-                height: 100% !important;
-                overflow-y: auto !important;
-            }
-            .panel.active {
-                display: flex !important;
-            }
-            /* Force visibility of all dashboard elements */
-            .dashboard-greeting,
-            .mission-stats,
-            .mission-table-container,
-            .bottom-section {
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-            }
-            
-            /* Emergency drone configuration visibility CSS */
-            .drone-config-panel {
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                background: #1a1a1a !important;
-                color: white !important;
-                height: 100% !important;
-                overflow-y: auto !important;
-            }
-            
-            .drone-fleet-section {
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                padding: 16px !important;
-                background: linear-gradient(135deg, rgba(30, 30, 35, 0.8) 0%, rgba(20, 20, 25, 0.9) 100%) !important;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-                margin-bottom: 8px !important;
-            }
-            
-            .drone-grid {
-                display: grid !important;
-                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
-                gap: 12px !important;
-            }
-            
-            .drone-card.elegant {
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                background: linear-gradient(145deg, rgba(40, 44, 52, 0.95) 0%, rgba(32, 36, 44, 0.98) 100%) !important;
-                border: 1px solid rgba(255, 255, 255, 0.06) !important;
-                border-radius: 12px !important;
-                padding: 14px !important;
-            }
-            
-            .config-content {
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                padding: 15px !important;
-                max-height: calc(100vh - 200px) !important;
-                overflow-y: auto !important;
-            }
-            
-            .config-section {
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                margin-bottom: 25px !important;
-                background: #2a2a2a !important;
-                border: 1px solid #444 !important;
-                border-radius: 8px !important;
-                padding: 15px !important;
-            }
-            
-            .add-drone-btn {
-                background-color: #2c3e50 !important;
-                color: white !important;
-                border: none !important;
-                padding: 8px 15px !important;
-                border-radius: 4px !important;
-                cursor: pointer !important;
-                display: flex !important;
-                align-items: center !important;
-                gap: 8px !important;
-                font-size: 14px !important;
-                font-weight: bold !important;
-            }
-        `;
-        document.head.appendChild(emergencyCSS);
-        console.log('Emergency CSS injected for dashboard and drone configuration visibility');
     }
 
     async toggleLeftSidebar(panelName) {
         const sidebar = document.getElementById('leftSidebar');
         const isExpanded = sidebar.classList.contains('expanded');
         const isSamePanel = this.currentLeftPanel === panelName;
-
-        console.log(`Toggling left sidebar: ${panelName}, isExpanded: ${isExpanded}, isSamePanel: ${isSamePanel}`);
 
         if (isExpanded && isSamePanel) {
             // Collapse if clicking the same panel
@@ -310,22 +192,6 @@ class SidebarManager {
             // Adjust width after everything is loaded - use setTimeout to ensure DOM is ready
             setTimeout(() => {
                 this.adjustExtendedSidebarWidth();
-                
-                // Additional debugging for drone configuration
-                if (panelName === 'droneConfiguration') {
-                    console.log('Drone configuration panel should now be visible');
-                    const dronePanel = document.querySelector('.drone-config-panel');
-                    const addDroneBtn = document.getElementById('addDroneBtn');
-                    const droneCards = document.querySelectorAll('.drone-card');
-                    
-                    console.log('Drone configuration elements check:', {
-                        dronePanel: !!dronePanel,
-                        addDroneBtn: !!addDroneBtn,
-                        droneCards: droneCards.length,
-                        sidebarExpanded: sidebar.classList.contains('expanded'),
-                        droneConfigExtended: sidebar.classList.contains('drone-config-extended')
-                    });
-                }
             }, 100);
         }
         
@@ -394,55 +260,7 @@ class SidebarManager {
 
         container.appendChild(panelDiv);
         
-        // Special handling for drone configuration
-        if (panelName === 'droneConfiguration') {
-            console.log('Drone configuration panel loaded, checking for elements...');
-            setTimeout(() => {
-                const addDroneBtn = document.getElementById('addDroneBtn');
-                const droneDropdown = document.getElementById('droneDropdown');
-                const droneCards = document.querySelectorAll('.drone-card');
-                
-                console.log('Drone configuration elements found:', {
-                    addDroneBtn: !!addDroneBtn,
-                    droneDropdown: !!droneDropdown,
-                    droneCards: droneCards.length
-                });
-                
-                if (addDroneBtn) {
-                    console.log('Add drone button found and should be functional');
-                } else {
-                    console.error('Add drone button not found!');
-                }
-            }, 100);
-        }
         
-        // Initialize AIAgent specifically
-        if (panelName === 'aiAgent') {
-            setTimeout(() => {
-                console.log('=== AIAgent Initialization ===');
-                console.log('Checking for AIAgent class...');
-                console.log('window.AIAgent:', window.AIAgent);
-                console.log('typeof AIAgent:', typeof AIAgent);
-                console.log('window.aiAgentInstance before:', window.aiAgentInstance);
-                
-                if (typeof AIAgent !== 'undefined') {
-                    try {
-                        window.aiAgentInstance = new AIAgent();
-                        console.log('AIAgent initialized successfully');
-                        console.log('aiAgent instance:', window.aiAgentInstance);
-                        console.log('aiAgent waypoints:', window.aiAgentInstance.waypoints);
-                        
-                    } catch (error) {
-                        console.error('Error initializing AIAgent:', error);
-                    }
-                } else {
-                    console.error('AIAgent class not found');
-                }
-            }, 200);
-        }
-        
-        console.log(`Panel ${panelName} loaded successfully`);
-        console.log('Panel content:', panelDiv.innerHTML.substring(0, 200) + '...');
     }
 
     async loadHTML(container, path) {
@@ -454,7 +272,7 @@ class SidebarManager {
             
             if (response.ok) {
                 const html = await response.text();
-                console.log(`Loaded HTML successfully from file: ${path}, length: ${html.length}`);
+                console.log(`Loaded HTML successfully from file: ${path}`);
                 container.innerHTML = html;
             } else {
                 // Fallback to placeholder content
@@ -636,215 +454,11 @@ class SidebarManager {
 
     getDroneConfigHTML() {
         return `
-            <div class="drone-config-panel">
-                <div class="panel-header">
-                    <h3><i class="fas fa-cogs"></i> Drone Configuration</h3>
-                    <!-- Add Drone Button and Dropdown -->
-                    <div class="add-drone-container">
-                        <button id="addDroneBtn" class="add-drone-btn">
-                            <i class="fas fa-plus"></i> Add Drone
-                        </button>
-                        <div id="droneDropdown" class="drone-dropdown hidden">
-                            <div class="drone-option" data-drone="hovermax">
-                                <img src="../../../../assets/hovermax.png" alt="Hovermax" class="option-img">
-                                <span>Hovermax</span>
-                            </div>
-                            <div class="drone-option" data-drone="phantom-x2">
-                                <img src="../../../../assets/panthom x2.png" alt="Phantom X2" class="option-img">
-                                <span>Phantom X2</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Elegant Drone List Section -->
-                <div class="drone-fleet-section">
-                    <div class="section-header">
-                        <h4>Active Fleet</h4>
-                        <span class="drone-count">2 Drones</span>
-                    </div>
-                    
-                    <div class="drone-grid">
-                        <!-- Phantom X2 Card -->
-                        <div class="drone-card elegant">
-                            <div class="card-header">
-                                <div class="drone-avatar">
-                                    <img src="../../../../assets/panthom x2.png" alt="Phantom X2" class="drone-img">
-                                    <div class="status-badge active">
-                                        <div class="status-dot"></div>
-                                    </div>
-                                </div>
-                                <div class="drone-title">
-                                    <h5>Phantom X2</h5>
-                                    <span class="drone-id">ID: hR49dfY5</span>
-                                </div>
-                            </div>
-                            
-                            <div class="card-metrics">
-                                <div class="metric">
-                                    <div class="metric-icon battery">
-                                        <i class="fas fa-battery-three-quarters"></i>
-                                    </div>
-                                    <div class="metric-info">
-                                        <span class="value">78%</span>
-                                        <span class="label">Battery</span>
-                                    </div>
-                                </div>
-                                <div class="metric">
-                                    <div class="metric-icon signal">
-                                        <i class="fas fa-wifi"></i>
-                                    </div>
-                                    <div class="metric-info">
-                                        <span class="value">Strong</span>
-                                        <span class="label">Signal</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="card-specs">
-                                <div class="spec-row">
-                                    <span>Range</span>
-                                    <span class="spec-value">15 km</span>
-                                </div>
-                                <div class="spec-row">
-                                    <span>Payload</span>
-                                    <span class="spec-value">2.5 kg</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Hovermax Card -->
-                        <div class="drone-card elegant">
-                            <div class="card-header">
-                                <div class="drone-avatar">
-                                    <img src="../../../../assets/hovermax.png" alt="Hovermax" class="drone-img">
-                                    <div class="status-badge active">
-                                        <div class="status-dot"></div>
-                                    </div>
-                                </div>
-                                <div class="drone-title">
-                                    <h5>Hovermax</h5>
-                                    <span class="drone-id">ID: hR49dfY5</span>
-                                </div>
-                            </div>
-                            
-                            <div class="card-metrics">
-                                <div class="metric">
-                                    <div class="metric-icon battery">
-                                        <i class="fas fa-battery-three-quarters"></i>
-                                    </div>
-                                    <div class="metric-info">
-                                        <span class="value">78%</span>
-                                        <span class="label">Battery</span>
-                                    </div>
-                                </div>
-                                <div class="metric">
-                                    <div class="metric-icon signal">
-                                        <i class="fas fa-wifi"></i>
-                                    </div>
-                                    <div class="metric-info">
-                                        <span class="value">Strong</span>
-                                        <span class="label">Signal</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="card-specs">
-                                <div class="spec-row">
-                                    <span>Range</span>
-                                    <span class="spec-value">15 km</span>
-                                </div>
-                                <div class="spec-row">
-                                    <span>Payload</span>
-                                    <span class="spec-value">2.5 kg</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="config-content">
-                    <div class="config-section">
-                        <h4><i class="fas fa-wifi"></i> Connection Settings</h4>
-                        <div class="config-group">
-                            <label>Connection Type:</label>
-                            <select id="connection-type">
-                                <option value="usb">USB</option>
-                                <option value="wifi">WiFi</option>
-                                <option value="radio">Radio</option>
-                                <option value="bluetooth">Bluetooth</option>
-                            </select>
-                        </div>
-                        <div class="config-group">
-                            <label>Port/Address:</label>
-                            <input type="text" id="connection-address" placeholder="COM3 or 192.168.1.100">
-                        </div>
-                        <div class="config-group">
-                            <label>Baud Rate:</label>
-                            <select id="baud-rate">
-                                <option value="9600">9600</option>
-                                <option value="57600" selected>57600</option>
-                                <option value="115200">115200</option>
-                                <option value="460800">460800</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="config-section">
-                        <h4><i class="fas fa-sliders-h"></i> Flight Parameters</h4>
-                        <div class="config-group">
-                            <label>Max Altitude (m):</label>
-                            <input type="number" id="max-altitude" value="120" min="1" max="500">
-                        </div>
-                        <div class="config-group">
-                            <label>Max Speed (m/s):</label>
-                            <input type="number" id="max-speed" value="15" min="1" max="25" step="0.5">
-                        </div>
-                        <div class="config-group">
-                            <label>Return Home Altitude (m):</label>
-                            <input type="number" id="rth-altitude" value="50" min="10" max="200">
-                        </div>
-                        <div class="config-group">
-                            <label>Auto Land Battery (%):</label>
-                            <input type="number" id="auto-land-battery" value="20" min="10" max="50">
-                        </div>
-                    </div>
-
-                    <div class="config-section">
-                        <h4><i class="fas fa-shield-alt"></i> Safety Settings</h4>
-                        <div class="config-group checkbox-group">
-                            <input type="checkbox" id="geofence" checked>
-                            <label for="geofence">Enable Geofence</label>
-                        </div>
-                        <div class="config-group checkbox-group">
-                            <input type="checkbox" id="obstacle-avoidance" checked>
-                            <label for="obstacle-avoidance">Obstacle Avoidance</label>
-                        </div>
-                        <div class="config-group checkbox-group">
-                            <input type="checkbox" id="auto-rth" checked>
-                            <label for="auto-rth">Auto Return Home</label>
-                        </div>
-                        <div class="config-group checkbox-group">
-                            <input type="checkbox" id="motor-cutoff">
-                            <label for="motor-cutoff">Emergency Motor Cutoff</label>
-                        </div>
-                    </div>
-
-                    <div class="config-actions">
-                        <button class="config-btn save-btn" id="save-config">
-                            <i class="fas fa-save"></i>
-                            Save Configuration
-                        </button>
-                        <button class="config-btn load-btn" id="load-config">
-                            <i class="fas fa-upload"></i>
-                            Load Configuration
-                        </button>
-                        <button class="config-btn reset-btn" id="reset-config">
-                            <i class="fas fa-undo"></i>
-                            Reset to Default
-                        </button>
-                    </div>
-                </div>
+            <div class="panel-header">
+                <h3><i class="fas fa-cogs"></i> Drone Configuration</h3>
+            </div>
+            <div class="config-content">
+                <p>Drone Configuration component loaded successfully!</p>
             </div>
         `;
     }
@@ -1074,10 +688,10 @@ class SidebarManager {
             let newWidth;
             if (rightSidebarExpanded) {
                 // When right sidebar is expanded, it takes 320px total
-                newWidth = `calc(100vw - 320px)`;
+                newWidth = `calc(100vm - 320px)`;
             } else {
                 // When right sidebar is collapsed, it takes 50px total
-                newWidth = `calc(100vw - 50px)`;
+                newWidth = `calc(100vm - 50px)`;
             }
             
             console.log('Setting width to:', newWidth);

@@ -1,32 +1,24 @@
 .drone-config-panel {
-    width: 50%; /* Limit to first half of screen */
-    height: 100vh;
-    position: fixed; /* Fix to left side */
-    left: 0;
-    top: 0;
+    width: 100%; /* Use full available width */
+    
     background: #1a1a1a;
     color: #ffffff;
-    overflow: hidden; /* Remove outer scrollbar */
-    z-index: 10;
+    overflow-y: auto; /* Allow vertical scrolling */
 }
 
 .drone-config-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 50%; /* Match panel width */
+     /* Match panel width */
     height: 60px;
     background: #1a1a1a;
     border-bottom: 1px solid #333;
     display: flex;
     align-items: center;
     padding: 0 20px;
-    z-index: 100;
 }
 
 .drone-config-panel,
 .drone-config-header {           /* header must match panel */
-    width: 50vw;                 /* 50 % of the viewport */
+    width: 100%;                 /* Use full available width */
 }
 
 .drone-config-title {
@@ -38,6 +30,7 @@
 
 /* Elegant Drone Fleet Section */
 .drone-fleet-section {
+    width: 100%; /* Use full available width */
     padding: 12px; /* Reduce padding for smaller width */
     background: linear-gradient(135deg, rgba(30, 30, 35, 0.8) 0%, rgba(20, 20, 25, 0.9) 100%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -62,7 +55,7 @@
 .drone-count {
     font-size: 12px;
     color: #64b5f6;
-    background: rgba(100, 181, 246, 0.1);
+    background: rgba(52, 74, 93, 0.1);
     padding: 4px 12px;
     border-radius: 20px;
     border: 1px solid rgba(100, 181, 246, 0.2);
@@ -403,26 +396,16 @@
 }
 
 .config-content {
-    position: absolute;
-    top: 60px; /* Start below fixed header */
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: relative;
+    width: 100%; /* Use full available width */
     padding: 15px;
-    overflow-y: auto; /* Keep only inner scrollbar */
-    overflow-x: hidden; /* Prevent horizontal scroll */
     background: #1a1a1a;
+    overflow-y: auto;
+    height: calc(100vh - 120px);
 }
 
 .drone-config-panel {
     overflow: hidden;            /* hide outer bar          */
-}
-.config-content {
-    position: absolute;
-    top: 60px;                   /* below fixed header      */
-    left: 0; right: 0; bottom: 0;
-    overflow-y: auto;            /* one clean vertical bar  */
-    overflow-x: hidden;
 }
 
 /* Extended sidebar for drone configuration */
@@ -430,6 +413,7 @@
     /* Width will be set dynamically by JavaScript with !important */
     max-width: 1200px;
     min-width: 600px; /* Ensure minimum usable width */
+    /* what the fuck is this? */
 }
 
 .sidebar.expanded.drone-config-extended .config-content {

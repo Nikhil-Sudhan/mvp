@@ -1,8 +1,8 @@
-# Sky Loom Integration Guide
+# Avionixis Integration Guide
 
 ## 🎉 New Modular Sidebar System
 
-Your Sky Loom application has been successfully upgraded with a modular component system! Here's what changed and how to work with it.
+Your Avionixis application has been successfully upgraded with a modular component system! Here's what changed and how to work with it.
 
 ## ✅ What Was Replaced
 
@@ -63,26 +63,26 @@ Click any icon to toggle that panel open/closed
 
 ## 🔌 API Integration
 
-### **Global API (`window.skyLoomAPI`)**
+### **Global API (`window.avionixisAPI`)**
 ```javascript
 // Execute commands
-skyLoomAPI.executeCommand('dashboard');
+avionixisAPI.executeCommand('dashboard');
 
 // Control drone functions
-skyLoomAPI.executeDroneFunction('takeoff');
+avionixisAPI.executeDroneFunction('takeoff');
 
 // Update telemetry data
-skyLoomAPI.updateTelemetryData({
+avionixisAPI.updateTelemetryData({
     altitude: '10.5m',
     speed: '3.2 m/s',
     battery: '85%'
 });
 
 // Show notifications
-skyLoomAPI.showNotification('Mission completed!', 'success');
+avionixisAPI.showNotification('Mission completed!', 'success');
 
 // Update status bar
-skyLoomAPI.updateStatusBar('center', 'Status: Flying');
+avionixisAPI.updateStatusBar('center', 'Status: Flying');
 ```
 
 ### **Component Registration**
@@ -92,7 +92,7 @@ Components can register themselves:
 class MyComponent {
     constructor() {
         // Register with the global API
-        window.skyLoomAPI.registerComponent('myComponent', this);
+        window.avionixisAPI.registerComponent('myComponent', this);
     }
 }
 ```
@@ -206,4 +206,4 @@ The modular system makes it much easier to:
 - 🚀 **Scale** with new functionality
 - 🐛 **Debug** isolated issues
 
-Your Sky Loom application is now more organized, maintainable, and ready for future enhancements! 🚁✨ 
+Your Avionixis application is now more organized, maintainable, and ready for future enhancements! 🚁✨ 

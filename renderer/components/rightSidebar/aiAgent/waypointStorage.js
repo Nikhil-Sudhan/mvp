@@ -1,7 +1,7 @@
 class WaypointStorage {
     constructor() {
         this.useFileSystem = false;
-        this.storageKey = 'skyloom-waypoints';
+        this.storageKey = 'avionixis-waypoints';
         
         // Try to initialize Node.js modules for Electron
         this.initFileSystem();
@@ -29,7 +29,7 @@ class WaypointStorage {
         if (!this.useFileSystem) return;
 
         try {
-            this.basePath = this.path.join(this.os.homedir(), '.skyloom');
+            this.basePath = this.path.join(this.os.homedir(), '.avionixis');
             this.waypointsPath = this.path.join(this.basePath, 'waypoints');
             this.waypointsFile = this.path.join(this.waypointsPath, 'waypoints.json');
             
@@ -212,7 +212,7 @@ class WaypointStorage {
             const exportData = {
                 exportedAt: new Date().toISOString(),
                 version: '1.0',
-                source: 'Sky Loom',
+                source: 'Avionixis',
                 waypoints: waypoints
             };
 

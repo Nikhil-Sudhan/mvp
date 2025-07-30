@@ -93,9 +93,9 @@
     z-index: 1000;
 }
 
-/* .sidebar.expanded {
+.sidebar.expanded {
     width: 320px;
-} */
+} 
 
 .sidebar-toggle {
     background: var(--sidebar-bg);
@@ -191,6 +191,17 @@
 .sidebar.expanded .sidebar-content {
     opacity: 1;
     pointer-events: auto;
+    display: block !important;
+}
+
+.dashboard-panel {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: #1a1a1a !important;
+    color: white !important;
+    height: 100% !important;
+    overflow-y: auto !important;
 }
 
 /* Panel switching */
@@ -373,3 +384,12 @@ body.right-sidebar-expanded .map-controls {
     transition: right 0.3s ease;
 }
 
+/* Force visibility of all dashboard elements */
+.dashboard-greeting,
+.mission-stats,
+.mission-table-container,
+.bottom-section {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}

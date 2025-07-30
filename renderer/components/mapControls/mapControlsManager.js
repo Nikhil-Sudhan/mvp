@@ -40,14 +40,14 @@ class MapControlsManager {
             console.log('Map Controls Manager initialized successfully');
             
             // Show success notification
-            if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-                window.skyLoomAPI.showNotification('Map controls ready', 'success');
+                    if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+            window.avionixisAPI.showNotification('Map controls ready', 'success');
             }
             
         } catch (error) {
             console.error('Failed to initialize Map Controls Manager:', error);
-            if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-                window.skyLoomAPI.showNotification('Map controls failed to initialize', 'error');
+                    if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+            window.avionixisAPI.showNotification('Map controls failed to initialize', 'error');
             }
         }
     }
@@ -63,7 +63,7 @@ class MapControlsManager {
                 // Check for viewer in multiple possible locations
                 this.viewer = window.cesiumViewer || 
                              window.viewer || 
-                             (window.skyLoomAPI && window.skyLoomAPI.getCesiumViewer && window.skyLoomAPI.getCesiumViewer());
+                             (window.avionixisAPI && window.avionixisAPI.getCesiumViewer && window.avionixisAPI.getCesiumViewer());
                 
                 if (this.viewer && this.viewer.scene) {
                     console.log('Cesium viewer found and ready');
@@ -136,13 +136,13 @@ class MapControlsManager {
                     this.layerManager.currentLayer = layerType;
                     console.log(`Switched to ${layer.name} layer`);
                     
-                    if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-                        window.skyLoomAPI.showNotification(`Switched to ${layer.name} view`, 'info');
+                    if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+                        window.avionixisAPI.showNotification(`Switched to ${layer.name} view`, 'info');
                     }
                 } catch (error) {
                     console.error('Failed to switch layer:', error);
-                    if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-                        window.skyLoomAPI.showNotification('Failed to switch map layer', 'error');
+                    if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+                        window.avionixisAPI.showNotification('Failed to switch map layer', 'error');
                     }
                 }
             }
@@ -294,8 +294,8 @@ class MapControlsManager {
                 });
             }
             
-            if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-                window.skyLoomAPI.showNotification('Returned to home view', 'info');
+            if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+                window.avionixisAPI.showNotification('Returned to home view', 'info');
             }
         } catch (error) {
             console.error('Failed to go home:', error);
@@ -326,12 +326,12 @@ class MapControlsManager {
         this.states.isMeasuring = !this.states.isMeasuring;
         
         if (this.states.isMeasuring) {
-            if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-                window.skyLoomAPI.showNotification('Measure tool activated - Click to start measuring', 'info');
+            if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+                window.avionixisAPI.showNotification('Measure tool activated - Click to start measuring', 'info');
             }
         } else {
-            if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-                window.skyLoomAPI.showNotification('Measure tool deactivated', 'info');
+            if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+                window.avionixisAPI.showNotification('Measure tool deactivated', 'info');
             }
         }
         
@@ -353,21 +353,21 @@ class MapControlsManager {
             centerContent.requestFullscreen().then(() => {
                 this.states.isFullscreen = true;
                 this.updateFullscreenButton();
-                if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-                    window.skyLoomAPI.showNotification('Entered fullscreen mode', 'info');
+                if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+                    window.avionixisAPI.showNotification('Entered fullscreen mode', 'info');
                 }
             }).catch(err => {
                 console.error('Could not enter fullscreen mode:', err);
-                if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-                    window.skyLoomAPI.showNotification('Could not enter fullscreen mode', 'error');
+                if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+                    window.avionixisAPI.showNotification('Could not enter fullscreen mode', 'error');
                 }
             });
         } else {
             document.exitFullscreen().then(() => {
                 this.states.isFullscreen = false;
                 this.updateFullscreenButton();
-                if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-                    window.skyLoomAPI.showNotification('Exited fullscreen mode', 'info');
+                if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+                    window.avionixisAPI.showNotification('Exited fullscreen mode', 'info');
                 }
             });
         }
@@ -416,8 +416,8 @@ class MapControlsManager {
                 }
                 break;
             case 'erase':
-                if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-                    window.skyLoomAPI.showNotification('Erase tool selected - Click on shapes to remove', 'info');
+                if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+                    window.avionixisAPI.showNotification('Erase tool selected - Click on shapes to remove', 'info');
                 }
                 break;
             default:
@@ -460,8 +460,8 @@ class MapControlsManager {
                 }
             }
             
-            if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-                window.skyLoomAPI.showNotification('Cleared all shapes', 'success');
+            if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+                window.avionixisAPI.showNotification('Cleared all shapes', 'success');
             }
         }
     }
@@ -482,14 +482,14 @@ class MapControlsManager {
     // Utility methods
     showError(message) {
         console.error(message);
-        if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-            window.skyLoomAPI.showNotification(message, 'error');
+        if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+            window.avionixisAPI.showNotification(message, 'error');
         }
     }
 
     showSuccess(message) {
-        if (window.skyLoomAPI && window.skyLoomAPI.showNotification) {
-            window.skyLoomAPI.showNotification(message, 'success');
+        if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+            window.avionixisAPI.showNotification(message, 'success');
         }
     }
 }

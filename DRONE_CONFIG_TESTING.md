@@ -12,7 +12,7 @@ The drone configuration panel was not visible in the application due to the side
 ## How to Test the Drone Configuration Panel
 
 ### Method 1: Main Application
-1. Open the Sky Loom application (should be running on `http://localhost:3000`)
+1. Open the Avionixis application (should be running on `http://localhost:3000`)
 2. Click on the **cogs icon** (⚙️) in the left sidebar to open the Drone Configuration panel
 3. The panel should expand and show:
    - "Add Drone" button with dropdown
@@ -65,4 +65,4 @@ The application now includes console logging to help debug issues:
 - `renderer/index.html` - Added direct CSS link
 - `test-drone-config.html` - Created standalone test file
 
-The drone configuration panel should now be fully functional and visible in the Sky Loom application! 
+The drone configuration panel should now be fully functional and visible in the Avionixis application! 

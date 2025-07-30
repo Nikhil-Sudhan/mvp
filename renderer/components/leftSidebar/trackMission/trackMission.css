@@ -1,6 +1,6 @@
 .track-mission-panel {
     height: 100%;
-    width: 100%;
+    width: 100%; /* Use full available width */
     overflow-x: hidden;
     position: relative;
 }
@@ -10,7 +10,7 @@
     max-height: calc(100vh - 200px);
     overflow-y: auto;
     overflow-x: hidden;
-    width: 100%;
+    width: 100%; /* Use full available width */
     box-sizing: border-box;
 }
 
