@@ -1,6 +1,8 @@
+// Prevent redeclaration if already loaded
+if (typeof AIAgent === 'undefined') {
+    
 class AIAgent {
     constructor() {
-        console.log('AIAgent constructor called');
         this.droneCommandAPI = null;
         this.waypointStorage = null;
         this.waypoints = [];
@@ -8,20 +10,21 @@ class AIAgent {
         this.selectedWaypoints = [];
         this.selectedMode = 'surveillance'; // Default mode
         this.selectedModel = 'auto'; // Default model
-        this.init();
+        
+        // Force immediate setup
+        setTimeout(() => {
+            this.init();
+        }, 100);
     }
 
     async init() {
         try {
-            console.log('Initializing AI Agent...');
-            
             // Initialize API and storage
             this.droneCommandAPI = new DroneCommandAPI();
             this.waypointStorage = new WaypointStorage();
             
             // Load existing waypoints
             this.waypoints = await this.waypointStorage.loadWaypoints();
-            console.log(`Loaded ${this.waypoints.length} existing waypoints`);
             
             // Set up event listeners
             this.setupEventListeners();
@@ -29,11 +32,8 @@ class AIAgent {
             // Update waypoints list
             this.updateWaypointsList();
             
-            console.log('AI Agent initialized successfully');
-            
             // Force update after a short delay to ensure DOM is ready
             setTimeout(() => {
-                console.log('Forcing waypoints list update...');
                 this.updateWaypointsList();
                 
                 // Initialize default selections
@@ -88,7 +88,10 @@ class AIAgent {
         const contextDropdown = document.getElementById('context-dropdown');
         
         if (contextButton) {
-            contextButton.addEventListener('click', () => {
+            contextButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Context button clicked!');
                 this.toggleContextDropdown();
             });
         }
@@ -854,7 +857,10 @@ class AIAgent {
 
     // Context dropdown methods
     toggleContextDropdown() {
+        console.log('toggleContextDropdown called');
         const contextDropdown = document.getElementById('context-dropdown');
+        console.log('Context dropdown element:', !!contextDropdown);
+        
         if (contextDropdown) {
             if (contextDropdown.classList.contains('show')) {
                 this.hideContextDropdown();
@@ -865,10 +871,12 @@ class AIAgent {
     }
 
     showContextDropdown() {
+        console.log('showContextDropdown called');
         const contextDropdown = document.getElementById('context-dropdown');
         if (contextDropdown) {
             contextDropdown.classList.add('show');
             this.populateContextDropdown();
+            console.log('Context dropdown should be visible now');
         }
     }
 
@@ -992,7 +1000,6 @@ class AIAgent {
 
         // Store selected mode
         this.selectedMode = mode;
-        console.log(`Selected mode: ${mode}`);
 
         this.hideModeDropdown();
     }
@@ -1051,14 +1058,12 @@ class AIAgent {
 
         // Store selected model
         this.selectedModel = model;
-        console.log(`Selected model: ${model}`);
 
         this.hideModelDropdown();
     }
 
     // Stop operation method
     stopCurrentOperation() {
-        console.log('Stopping current operation...');
         this.addAIMessage('🛑 Operation stopped by user.');
         
         // Switch back to start button
@@ -1072,4 +1077,6 @@ class AIAgent {
 
 
 // Export for global access
-window.AIAgent = AIAgent; 
+window.AIAgent = AIAgent;
+
+} // End of AIAgent class definition guard 

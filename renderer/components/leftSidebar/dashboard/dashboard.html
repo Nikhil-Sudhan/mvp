@@ -39,68 +39,59 @@
         <!-- Weather Section -->
         <div class="weather-widget">
             <div class="section-header">
-                <h4>Weather</h4>
+                <h4><i class="fas fa-cloud-sun"></i> Live Weather</h4>
+                <div class="weather-refresh">
+                    <button id="refresh-weather" class="refresh-btn" title="Refresh Weather">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
             </div>
             <div class="weather-info">
                 <div class="weather-main">
                     <div class="weather-icon">
                         <i class="fas fa-cloud-sun"></i>
                     </div>
-                    <div class="temperature">--°</div>
+                    <div class="temperature-container">
+                        <div class="temperature">--°</div>
+                        <div class="weather-description">Loading weather...</div>
+                    </div>
                 </div>
                 <div class="location">
-                    <select id="location-select">
-                        <option>Select Location</option>
-                        <option>Aundh, Pune</option>
-                        <option>Mumbai</option>
-                        <option>Delhi</option>
-                    </select>
+                    <div class="location-display">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span id="current-location">Detecting location...</span>
+                    </div>
                 </div>
                 <div class="weather-details">
                     <div class="weather-conditions">
                         <div class="condition-item">
                             <i class="fas fa-sun"></i>
-                            <span>Condition: --</span>
+                            <span class="condition-text">Condition: --</span>
                         </div>
                         <div class="condition-item">
                             <i class="fas fa-wind"></i>
-                            <span>Wind speed: -- mph</span>
+                            <span class="wind-text">Wind: -- mph</span>
+                        </div>
+                        <div class="condition-item">
+                            <i class="fas fa-tint"></i>
+                            <span class="humidity-text">Humidity: --%</span>
                         </div>
                     </div>
                     <div class="risk-assessment">
                         <div class="risk-level">
-                            <span>Risk Level</span>
-                            <span class="risk-indicator safe">--</span>
-                        </div>
-                        <div class="risk-details">
-                            <span>Risk of Overheating: --%</span>
-                            <span>Humidity: --%</span>
+                            <span>Flight Risk</span>
+                            <span class="risk-indicator">--</span>
                         </div>
                     </div>
                 </div>
-                <div class="forecast">
-                    <h5>Forecast <span>--</span></h5>
-                    <div class="forecast-hours">
-                        <div class="hour-item">
-                            <span>--</span>
-                            <span class="temp">--°</span>
-                        </div>
-                        <div class="hour-item">
-                            <span>--</span>
-                            <span class="temp">--°</span>
-                        </div>
-                        <div class="hour-item">
-                            <span>--</span>
-                            <span class="temp">--°</span>
-                        </div>
-                        <div class="hour-item">
-                            <span>--</span>
-                            <span class="temp">--°</span>
-                        </div>
-                        <div class="hour-item">
-                            <span>--</span>
-                            <span class="temp">--°</span>
-                        </div>
+                <div class="weather-footer">
+                    <div class="last-updated">
+                        <i class="fas fa-clock"></i>
+                        <span id="weather-update-time">Last updated: --</span>
+                    </div>
+                    <div class="weather-source">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Open-Meteo</span>
                     </div>
                 </div>
             </div>

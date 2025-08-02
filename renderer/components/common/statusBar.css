@@ -34,3 +34,104 @@
 .status-connected {
     color: #4caf50;
 }
+
+.status-disconnected {
+    color: #f44336;
+}
+
+/* Weather icon animations */
+.status-item i {
+    transition: color 0.3s ease;
+}
+
+.status-item i.fa-sun {
+    color: #ff9800;
+}
+
+.status-item i.fa-cloud-sun {
+    color: #ffc107;
+}
+
+.status-item i.fa-cloud {
+    color: #9e9e9e;
+}
+
+.status-item i.fa-cloud-rain {
+    color: #2196f3;
+}
+
+.status-item i.fa-bolt {
+    color: #ff9800;
+}
+
+.status-item i.fa-snowflake {
+    color: #e3f2fd;
+}
+
+/* Weather status items */
+.weather-status,
+.weather-condition {
+    cursor: help;
+    transition: opacity 0.3s ease;
+}
+
+.location-btn {
+    background: none;
+    border: none;
+    color: #ccc;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    margin-left: 5px;
+}
+
+.location-btn:hover {
+    background: #444;
+    color: #fff;
+}
+
+.weather-status:hover,
+.weather-condition:hover {
+    opacity: 0.8;
+}
+
+/* Weather tooltip styles */
+.weather-tooltip {
+    font-size: 11px;
+    line-height: 1.4;
+    text-align: left;
+}
+
+.risk-low {
+    color: #4caf50;
+}
+
+.risk-medium {
+    color: #ff9800;
+}
+
+.risk-high {
+    color: #f44336;
+}
+
+/* Status bar spacing for weather items */
+.status-right .status-item {
+    margin-right: 10px;
+}
+
+.status-right .status-item:last-child {
+    margin-right: 0;
+}
+
+/* Weather items spacing */
+.weather-status,
+.weather-condition {
+    margin-right: 15px;
+}
+
+.weather-status:last-child,
+.weather-condition:last-child {
+    margin-right: 0;
+}

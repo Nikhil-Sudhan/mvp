@@ -9,3 +9,4 @@ dont give the unnacessary options to the user.
 dont wrtie readme.md file.
 this entrie code base is for the UI frontend only.
 the backend is running on different file. 
+no code should include in index.html file. only html files should be included.

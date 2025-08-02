@@ -97,7 +97,7 @@ class DrawingTools {
             this.aiAgent.addAIMessage(`🎨 Drawing ${toolType} - Left click to add points, Right click to finish/cancel`);
         }
 
-        console.log(`Started drawing ${toolType}`);
+        // Started drawing
     }
 
     startPolygonDrawing() {
@@ -386,7 +386,7 @@ class DrawingTools {
             btn.classList.remove('active');
         });
 
-        console.log('Stopped drawing');
+        // Stopped drawing
     }
 
     clearAll() {
@@ -410,7 +410,7 @@ class DrawingTools {
             this.aiAgent.addAIMessage(`Cleared all shapes and waypoints.`);
         }
 
-        console.log(`Cleared ${entitiesToRemove.length} shapes`);
+        // Cleared shapes
     }
 
     // Keyboard shortcuts

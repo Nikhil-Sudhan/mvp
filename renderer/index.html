@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Avionixis - Drone Control IDE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="components/common/sidebar.css">
     <link rel="stylesheet" href="components/leftSidebar/droneConfiguration/droneConfiguration.css">
@@ -11,6 +14,8 @@
     <link rel="stylesheet" href="components/rightSidebar/aiAgent/drawingTools.css">
     <link rel="stylesheet" href="components/mapControls/mapControls.css">
     <link rel="stylesheet" href="components/common/statusBar.css">
+    <link rel="stylesheet" href="components/common/settingsModal.css">
+    <link rel="stylesheet" href="components/common/locationSettings.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
@@ -28,22 +33,18 @@
         <div class="title-bar-center">
             <div class="command-palette">
                 <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search commands and files..." id="commandInput">
+                <input type="text" placeholder="Search commands and drones..." id="commandInput">
             </div>
         </div>
         
         <div class="title-bar-right">
             <div class="title-bar-controls">
                 <div class="control-group">
-                    <button class="title-btn" title="Git">
-                        <i class="fab fa-git-alt"></i>
-                    </button>
-                    <button class="title-btn" title="Extensions">
+                
+                    <button class="title-btn" title="Video Feed">
                         <i class="fas fa-th-large"></i>
                     </button>
-                    <button class="title-btn" title="Remote">
-                        <i class="fas fa-cloud"></i>
-                    </button>
+                        
                     <button class="title-btn" title="Accounts">
                         <i class="fas fa-user"></i>
                     </button>
@@ -81,9 +82,7 @@
                         <button class="map-btn" id="homeBtn" title="Home View">
                             <i class="fas fa-home"></i>
                         </button>
-                        <button class="map-btn" id="layersBtn" title="Toggle Layers">
-                            <i class="fas fa-layers"></i>
-                        </button>
+                       
                         <button class="map-btn" id="measureBtn" title="Measure Distance">
                             <i class="fas fa-ruler"></i>
                         </button>
@@ -91,12 +90,7 @@
                             <i class="fas fa-expand"></i>
                         </button>
                     </div>
-                    <!-- Add this button in the map controls section -->
-                    <div class="control-group">
-                        <button class="map-btn" id="reloadMissionBtn" title="Reload Mission Data">
-                            <i class="fas fa-sync-alt"></i> Reload Mission
-                        </button>
-                    </div>
+                    
                     <!-- Drawing Tools Group -->
                     <div class="control-group drawing-tools-group">
                         <button class="map-btn draw-tool-btn" id="polygonTool" data-tool="polygon" title="Draw Polygon">
@@ -121,9 +115,41 @@
         </div>
     </div>
 
-    <!-- Bottom Status Bar -->
-    <!--#include file="components/common/statusBar.html" -->
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-left">
+            <div class="status-item">
+                <i class="fas fa-wifi status-connected"></i>
+                <span>Connected</span>
+            </div>
+        </div>
+        <div class="status-center">
+            <div class="status-item">
+                <span>Status: Ready for Flight</span>
+            </div>
+        </div>
+        <div class="status-right">
+              
+            </div>
+            <div class="status-item weather-condition">
+                <i class="fas fa-cloud"></i>
+                <span class="condition-display">--</span>
+            </div>
+            <div class="status-item">
+                <span>Avionixis v1.0.0</span>
+            </div>
+        </div>
+    </div>
 
+
+
+    <!-- Include Settings Modal -->
+    <div id="settingsModalContainer"></div>
+
+    <script src="components/common/weatherService.js"></script>
+    <script src="components/common/locationSettings.js"></script>
+    <script src="components/common/statusBarManager.js"></script>
+    <script src="components/common/settingsModal.js"></script>
     <script src="components/common/sidebarManager.js"></script>
     <script src="components/leftSidebar/trackMission/trackMission.js"></script>
     <script src="components/leftSidebar/droneConfiguration/droneConfiguration.js"></script>

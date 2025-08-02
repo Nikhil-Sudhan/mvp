@@ -5,18 +5,37 @@ class Dashboard {
         this.initializeEventListeners();
         this.resetMissionStatistics();
         this.resetWeatherData();
+        this.initializeWeatherService();
         
         console.log('Dashboard initialized successfully');
     }
 
     initializeEventListeners() {
-        // Location change event listener
-        document.addEventListener('change', (e) => {
-            if (e.target.id === 'location-select') {
-                console.log(`Location changed to: ${e.target.value}`);
-                // In a real implementation, this would fetch weather data for the selected location
+        // Refresh weather button
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'refresh-weather' || e.target.closest('#refresh-weather')) {
+                this.refreshWeather();
             }
         });
+    }
+
+
+
+    refreshWeather() {
+        const refreshBtn = document.getElementById('refresh-weather');
+        if (refreshBtn) {
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            refreshBtn.disabled = true;
+        }
+
+        if (window.weatherService) {
+            window.weatherService.fetchWeatherData().finally(() => {
+                if (refreshBtn) {
+                    refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+                    refreshBtn.disabled = false;
+                }
+            });
+        }
     }
 
     resetMissionStatistics() {
@@ -42,11 +61,35 @@ class Dashboard {
             tempElement.textContent = '--°';
         }
         
-        // Reset location selector to default
-        const locationSelect = document.getElementById('location-select');
-        if (locationSelect) {
-            locationSelect.selectedIndex = 0;
+        const descriptionElement = document.querySelector('.weather-description');
+        if (descriptionElement) {
+            descriptionElement.textContent = 'Loading weather...';
         }
+        
+        const locationElement = document.getElementById('current-location');
+        if (locationElement) {
+            locationElement.textContent = 'Detecting location...';
+        }
+
+        // Reset update time
+        const updateTimeElement = document.getElementById('weather-update-time');
+        if (updateTimeElement) {
+            updateTimeElement.textContent = 'Last updated: --';
+        }
+    }
+
+    initializeWeatherService() {
+        // Wait for weather service to be available
+        const checkWeatherService = () => {
+            if (window.weatherService) {
+                window.weatherService.onWeatherUpdate((weatherData) => {
+                    this.updateWeatherData(weatherData);
+                });
+            } else {
+                setTimeout(checkWeatherService, 100);
+            }
+        };
+        checkWeatherService();
     }
 
     // Public methods for external API calls
@@ -75,20 +118,40 @@ class Dashboard {
         // Method to update weather when real data is available
         if (!weatherData) return;
 
+        // Update temperature
         const tempElement = document.querySelector('.temperature');
         if (tempElement && weatherData.temperature) {
             tempElement.textContent = `${weatherData.temperature}°`;
         }
         
-        // Update other weather elements as needed
-        const conditionElements = document.querySelectorAll('.condition-item span');
-        if (conditionElements.length >= 2) {
-            if (weatherData.condition) {
-                conditionElements[0].textContent = `Condition: ${weatherData.condition}`;
-            }
-            if (weatherData.windSpeed) {
-                conditionElements[1].textContent = `Wind speed: ${weatherData.windSpeed} mph`;
-            }
+        // Update weather description
+        const descriptionElement = document.querySelector('.weather-description');
+        if (descriptionElement && weatherData.description) {
+            descriptionElement.textContent = weatherData.description;
+        }
+        
+        // Update weather icon
+        const weatherIcon = document.querySelector('.weather-icon i');
+        if (weatherIcon) {
+            weatherIcon.className = this.getWeatherIconClass(weatherData.icon, weatherData.condition);
+        }
+        
+        // Update condition text
+        const conditionElement = document.querySelector('.condition-text');
+        if (conditionElement && weatherData.condition) {
+            conditionElement.textContent = `Condition: ${weatherData.condition}`;
+        }
+        
+        // Update wind text
+        const windElement = document.querySelector('.wind-text');
+        if (windElement && weatherData.windSpeed) {
+            windElement.textContent = `Wind: ${weatherData.windSpeed} mph`;
+        }
+        
+        // Update humidity text
+        const humidityElement = document.querySelector('.humidity-text');
+        if (humidityElement && weatherData.humidity) {
+            humidityElement.textContent = `Humidity: ${weatherData.humidity}%`;
         }
 
         // Update risk assessment
@@ -97,7 +160,53 @@ class Dashboard {
             riskIndicator.textContent = weatherData.riskLevel;
             riskIndicator.className = `risk-indicator ${weatherData.riskLevel.toLowerCase()}`;
         }
+
+
+
+        // Update location display
+        const locationElement = document.getElementById('current-location');
+        if (locationElement && weatherData.location) {
+            locationElement.textContent = weatherData.location;
+        }
+
+        // Update last updated time
+        const updateTimeElement = document.getElementById('weather-update-time');
+        if (updateTimeElement) {
+            const now = new Date();
+            updateTimeElement.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+        }
+
+        // Status bar updates are now handled by StatusBarManager
     }
+
+
+
+    getWeatherIconClass(iconCode, condition) {
+        const iconMap = {
+            '01d': 'fas fa-sun',
+            '01n': 'fas fa-moon',
+            '02d': 'fas fa-cloud-sun',
+            '02n': 'fas fa-cloud-moon',
+            '03d': 'fas fa-cloud',
+            '03n': 'fas fa-cloud',
+            '04d': 'fas fa-cloud',
+            '04n': 'fas fa-cloud',
+            '09d': 'fas fa-cloud-rain',
+            '09n': 'fas fa-cloud-rain',
+            '10d': 'fas fa-cloud-sun-rain',
+            '10n': 'fas fa-cloud-moon-rain',
+            '11d': 'fas fa-bolt',
+            '11n': 'fas fa-bolt',
+            '13d': 'fas fa-snowflake',
+            '13n': 'fas fa-snowflake',
+            '50d': 'fas fa-smog',
+            '50n': 'fas fa-smog'
+        };
+        
+        return iconMap[iconCode] || 'fas fa-cloud-sun';
+    }
+
+
 }
 
 // Initialize dashboard when loaded

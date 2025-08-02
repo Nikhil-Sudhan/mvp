@@ -24,7 +24,7 @@ class MapControlsManager {
 
     async init() {
         try {
-            console.log('Initializing Map Controls Manager...');
+            // Initializing Map Controls Manager
             
             // Wait for Cesium viewer to be available
             await this.waitForCesiumViewer();
@@ -37,7 +37,7 @@ class MapControlsManager {
             this.setupKeyboardShortcuts();
             
             this.isInitialized = true;
-            console.log('Map Controls Manager initialized successfully');
+            // Map Controls Manager initialized successfully
             
             // Show success notification
                     if (window.avionixisAPI && window.avionixisAPI.showNotification) {
@@ -66,7 +66,7 @@ class MapControlsManager {
                              (window.avionixisAPI && window.avionixisAPI.getCesiumViewer && window.avionixisAPI.getCesiumViewer());
                 
                 if (this.viewer && this.viewer.scene) {
-                    console.log('Cesium viewer found and ready');
+                    // Cesium viewer found and ready
                     resolve();
                 } else if (attempts >= maxAttempts) {
                     reject(new Error('Cesium viewer not available after maximum attempts'));
@@ -134,7 +134,7 @@ class MapControlsManager {
                     );
                     
                     this.layerManager.currentLayer = layerType;
-                    console.log(`Switched to ${layer.name} layer`);
+                    // Switched layer
                     
                     if (window.avionixisAPI && window.avionixisAPI.showNotification) {
                         window.avionixisAPI.showNotification(`Switched to ${layer.name} view`, 'info');
@@ -153,7 +153,7 @@ class MapControlsManager {
         // Initialize drawing tools if the class is available
         if (window.DrawingTools && this.viewer) {
             this.drawingTools = new window.DrawingTools(this.viewer, window.aiAgentInstance);
-            console.log('Drawing tools initialized');
+            // Drawing tools initialized
         } else {
             console.warn('Drawing tools not available');
         }

@@ -21,10 +21,7 @@
                         <span class="progress-text" id="progress-text">0%</span>
                     </div>
                 </div>
-                <div class="info-item">
-                    <label>Waypoints:</label>
-                    <span id="waypoint-progress">0/0</span>
-                </div>
+
                 <div class="info-item">
                     <label>Estimated Time:</label>
                     <span id="estimated-time">--:--</span>
@@ -32,24 +29,7 @@
             </div>
         </div>
 
-        <div class="mission-controls">
-            <button class="mission-btn start-btn" id="start-mission" disabled>
-                <i class="fas fa-play"></i>
-                Start Mission
-            </button>
-            <button class="mission-btn pause-btn" id="pause-mission" disabled>
-                <i class="fas fa-pause"></i>
-                Pause
-            </button>
-            <button class="mission-btn stop-btn" id="stop-mission" disabled>
-                <i class="fas fa-stop"></i>
-                Stop
-            </button>
-            <button class="mission-btn resume-btn" id="resume-mission" disabled>
-                <i class="fas fa-play"></i>
-                Resume
-            </button>
-        </div>
+        
 
         <!-- Mission Data Table -->
         <div class="mission-table-container">
@@ -80,71 +60,5 @@
                 <button class="page-btn next"><i class="fas fa-chevron-right"></i></button>
             </div>
         </div>
-
-        <div class="waypoints-section">
-            <h4><i class="fas fa-map-marker-alt"></i> Waypoints</h4>
-            <div class="waypoints-table-container">
-                <table class="waypoints-table" id="waypoints-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Name</th>
-                            <th>Coordinates</th>
-                            <th>Altitude</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="waypoints-table-body">
-                        <!-- Waypoints will be populated here -->
-                    </tbody>
-                </table>
-                <div class="empty-waypoints" id="empty-waypoints">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <p>No waypoints available</p>
-                    <span>Select waypoints from the AI Agent panel</span>
-                </div>
-            </div>
-            <div class="waypoint-actions">
-                <button class="waypoint-btn" id="add-waypoint">
-                    <i class="fas fa-plus"></i>
-                    Add Waypoint
-                </button>
-                <button class="waypoint-btn" id="clear-waypoints">
-                    <i class="fas fa-trash"></i>
-                    Clear All
-                </button>
-            </div>
-        </div>
-
-        <div class="mission-list">
-            <h4><i class="fas fa-list"></i> Saved Missions</h4>
-            <div class="missions-container" id="missions-container">
-                <div class="mission-item template" style="display: none;">
-                    <div class="mission-details">
-                        <div class="mission-title"></div>
-                        <div class="mission-meta"></div>
-                    </div>
-                    <div class="mission-actions">
-                        <button class="mission-action-btn load-btn" title="Load Mission">
-                            <i class="fas fa-upload"></i>
-                        </button>
-                        <button class="mission-action-btn delete-btn" title="Delete Mission">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="mission-file-actions">
-                <button class="file-btn" id="load-mission-file">
-                    <i class="fas fa-folder-open"></i>
-                    Load Mission File
-                </button>
-                <button class="file-btn" id="save-mission-file">
-                    <i class="fas fa-save"></i>
-                    Save Mission
-                </button>
-            </div>
-        </div>
     </div>
-</div> 
+</div>

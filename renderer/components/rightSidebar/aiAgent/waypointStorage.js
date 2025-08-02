@@ -17,7 +17,7 @@ class WaypointStorage {
             if (this.fs && this.path && this.os) {
                 this.useFileSystem = true;
                 this.setupPaths();
-                console.log('File system storage initialized');
+                // File system storage initialized
             }
         } catch (error) {
             console.warn('Node.js modules not available, using localStorage:', error);
@@ -37,7 +37,7 @@ class WaypointStorage {
             this.ensureDirectory(this.basePath);
             this.ensureDirectory(this.waypointsPath);
             
-            console.log('Storage paths initialized:', this.waypointsPath);
+            // Storage paths initialized
         } catch (error) {
             console.error('Failed to setup file system paths:', error);
             this.useFileSystem = false;
@@ -96,7 +96,7 @@ class WaypointStorage {
         
         // Validate data structure
         if (parsed.waypoints && Array.isArray(parsed.waypoints)) {
-            console.log(`Loaded ${parsed.waypoints.length} waypoints from file`);
+            // Loaded waypoints from file
             return parsed.waypoints;
         }
         
@@ -115,14 +115,14 @@ class WaypointStorage {
         };
 
         this.fs.writeFileSync(this.waypointsFile, JSON.stringify(data, null, 2), 'utf8');
-        console.log(`Saved ${waypoints.length} waypoints to file`);
+        // Saved waypoints to file
     }
 
     loadFromLocalStorage() {
         try {
             const saved = localStorage.getItem(this.storageKey);
             const waypoints = saved ? JSON.parse(saved) : [];
-            console.log(`Loaded ${waypoints.length} waypoints from localStorage`);
+            // Loaded waypoints from localStorage
             return waypoints;
         } catch (error) {
             console.error('Error loading from localStorage:', error);
@@ -133,7 +133,7 @@ class WaypointStorage {
     saveToLocalStorage(waypoints) {
         try {
             localStorage.setItem(this.storageKey, JSON.stringify(waypoints));
-            console.log(`Saved ${waypoints.length} waypoints to localStorage`);
+            // Saved waypoints to localStorage
             return true;
         } catch (error) {
             console.error('Error saving to localStorage:', error);
@@ -217,7 +217,7 @@ class WaypointStorage {
             };
 
             this.fs.writeFileSync(filePath, JSON.stringify(exportData, null, 2), 'utf8');
-            console.log(`Exported ${waypoints.length} waypoints to ${filePath}`);
+            // Exported waypoints
             return true;
         } catch (error) {
             console.error('Failed to export waypoints:', error);
@@ -253,7 +253,7 @@ class WaypointStorage {
             }
 
             await this.saveWaypoints(waypoints);
-            console.log(`Imported ${parsed.waypoints.length} waypoints from ${filePath}`);
+            // Imported waypoints
             return { 
                 success: true, 
                 imported: parsed.waypoints.length, 
@@ -301,7 +301,7 @@ class WaypointStorage {
     async clearAll() {
         try {
             await this.saveWaypoints([]);
-            console.log('Cleared all waypoints');
+            // Cleared all waypoints
             return true;
         } catch (error) {
             console.error('Failed to clear waypoints:', error);

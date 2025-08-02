@@ -23,7 +23,7 @@ let droneConfigManager;
 
 class DroneConfigurationManager {
     constructor() {
-        console.log("Initializing DroneConfigurationManager");
+        // Initializing DroneConfigurationManager
         this.initializeUI();
         this.bindEvents();
     }
@@ -33,11 +33,7 @@ class DroneConfigurationManager {
         this.droneDropdown = document.getElementById('droneDropdown');
         this.droneOptions = document.querySelectorAll('.drone-option');
         
-        console.log("UI Elements:", {
-            addDroneBtn: this.addDroneBtn,
-            droneDropdown: this.droneDropdown,
-            droneOptions: this.droneOptions
-        });
+        // UI Elements initialized
     }
 
     bindEvents() {
@@ -48,7 +44,7 @@ class DroneConfigurationManager {
 
         // Toggle dropdown
         this.addDroneBtn.addEventListener('click', (e) => {
-            console.log("Add Drone button clicked");
+            // Add Drone button clicked
             e.stopPropagation();
             this.droneDropdown.classList.toggle('hidden');
         });
@@ -65,7 +61,7 @@ class DroneConfigurationManager {
             this.droneOptions.forEach(option => {
                 option.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    console.log("Drone option clicked:", option.dataset.drone);
+                    // Drone option clicked
                     this.handleDroneSelection(option);
                 });
             });
@@ -76,7 +72,7 @@ class DroneConfigurationManager {
 
     async handleDroneSelection(option) {
         const droneType = option.dataset.drone;
-        console.log(`Selected drone: ${droneType}`);
+        // Selected drone
         this.droneDropdown.classList.add('hidden');
         
         try {
@@ -98,7 +94,7 @@ class DroneConfigurationManager {
             throw new Error("Cesium viewer not initialized");
         }
         
-        console.log(`Adding ${droneType} drone to map`);
+        // Adding drone to map
         
         // Create Cesium position from home location
         const position = Cesium.Cartesian3.fromDegrees(
@@ -108,7 +104,7 @@ class DroneConfigurationManager {
         );
 
         try {
-            console.log(`Loading 3D tileset for ${droneType}`);
+            // Loading 3D tileset
             
             // Load the 3D tileset
             const tileset = await Cesium.Cesium3DTileset.fromIonAssetId(modelConfig.ionAssetId);
@@ -119,7 +115,7 @@ class DroneConfigurationManager {
 
             // Add to scene
             window.viewer.scene.primitives.add(tileset);
-            console.log("Added tileset to scene");
+            // Added tileset to scene
 
             // Position the model
             tileset.modelMatrix = Cesium.Matrix4.fromTranslation(position);
@@ -139,7 +135,7 @@ class DroneConfigurationManager {
                 duration: 2
             });
             
-            console.log(`Successfully added ${droneType} drone to map`);
+            // Successfully added drone to map
             return tileset;
 
         } catch (error) {
@@ -149,7 +145,7 @@ class DroneConfigurationManager {
     }
     
     showNotification(message, type = 'info') {
-        console.log(`Notification: ${message} (${type})`);
+        // Notification sent
         
         // Create notification element
         const notification = document.createElement('div');
@@ -169,15 +165,15 @@ class DroneConfigurationManager {
 
 // Initialize immediately when script loads
 function initializeDroneManager() {
-    console.log("Initializing drone manager...");
+    // Initializing drone manager
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("DOM loaded, creating manager");
+            // DOM loaded, creating manager
             droneConfigManager = new DroneConfigurationManager();
             window.droneConfigManager = droneConfigManager;
         });
     } else {
-        console.log("DOM already loaded, creating manager");
+        // DOM already loaded, creating manager
         droneConfigManager = new DroneConfigurationManager();
         window.droneConfigManager = droneConfigManager;
     }

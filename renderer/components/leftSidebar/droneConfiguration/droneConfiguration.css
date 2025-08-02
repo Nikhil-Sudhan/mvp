@@ -35,6 +35,7 @@
     background: linear-gradient(135deg, rgba(30, 30, 35, 0.8) 0%, rgba(20, 20, 25, 0.9) 100%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     margin-bottom: 8px;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .section-header {
@@ -401,11 +402,15 @@
     padding: 15px;
     background: #1a1a1a;
     overflow-y: auto;
-    height: calc(100vh - 120px);
+    height: calc(100vh - 200px); /* Adjusted height to account for header and fleet section */
+    padding-bottom: 80px; /* Add bottom padding to ensure buttons are visible */
 }
 
 .drone-config-panel {
     overflow: hidden;            /* hide outer bar          */
+    height: 100vh; /* Ensure full height */
+    display: flex;
+    flex-direction: column;
 }
 
 /* Extended sidebar for drone configuration */
@@ -417,11 +422,14 @@
 }
 
 .sidebar.expanded.drone-config-extended .config-content {
-    display: grid;
-    grid-template-columns: 1fr; /* Single column for half-width */
+    display: flex;
+    flex-direction: column;
     gap: 15px; /* Reduce gap */
     padding: 15px;
     max-height: none;
+    overflow-y: auto;
+    height: calc(100vh - 200px);
+    padding-bottom: 80px;
 }
 
 .config-section {
@@ -521,8 +529,12 @@
     padding: 20px;               /* regular (not “shrunk”)  */
 }
 .config-actions {                /* wrapper that holds 3 buttons */
-    margin-top: auto;            /* pushes itself downward  */
+    margin-top: 20px;            /* Add some space above buttons */
     padding-bottom: 20px;        /* equals top padding      */
+    position: sticky;
+    bottom: 0;
+    background: #1a1a1a;
+    z-index: 10;
 }
 
 .config-btn {
@@ -603,6 +615,7 @@
     align-items: center;
     padding: 15px;
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .add-drone-container {

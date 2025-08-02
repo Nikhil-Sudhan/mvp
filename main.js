@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, session } = require('electron');
 const path = require('path');
 
 let mainWindow;
@@ -21,6 +21,16 @@ function createWindow() {
     frame: false,
     show: false,
     backgroundColor: '#1e1e1e'
+  });
+
+  // Handle geolocation permissions
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'geolocation') {
+      // Automatically grant geolocation permission
+      callback(true);
+    } else {
+      callback(false);
+    }
   });
 
   // Load the app
@@ -72,4 +82,9 @@ ipcMain.on('window-maximize', () => {
 
 ipcMain.on('window-close', () => {
   if (mainWindow) mainWindow.close();
+});
+
+// Handle geolocation permission requests
+ipcMain.handle('request-geolocation-permission', async () => {
+  return 'granted'; // Automatically grant geolocation permission
 }); 

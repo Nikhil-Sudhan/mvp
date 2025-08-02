@@ -1,11 +1,19 @@
 .profile-panel {
-    height: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.panel-header {
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .profile-content {
+    flex: 1;
     padding: 15px;
-    max-height: calc(100vh - 200px);
     overflow-y: auto;
+    padding-bottom: 20px; /* Reduced padding since no action buttons */
 }
 
 .profile-header {
@@ -17,6 +25,7 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
     margin-bottom: 20px;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .avatar-container {
@@ -113,7 +122,7 @@
     font-weight: 500;
 }
 
-.profile-info, .certification-section, .recent-activity {
+.profile-info {
     margin-bottom: 20px;
     background: var(--editor-bg);
     border: 1px solid var(--border-color);
@@ -164,186 +173,22 @@
     box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
 }
 
-.certifications-list {
-    margin-bottom: 15px;
-}
 
-.cert-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    background: var(--sidebar-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    margin-bottom: 8px;
-}
 
-.cert-icon {
-    color: var(--accent-color);
-    font-size: 18px;
-}
 
-.cert-info {
-    flex: 1;
-}
 
-.cert-name {
-    font-size: 13px;
-    color: var(--text-primary);
-    font-weight: 600;
-    margin-bottom: 2px;
-}
 
-.cert-status {
-    font-size: 11px;
-    padding: 2px 6px;
-    border-radius: 3px;
-    display: inline-block;
-    margin-bottom: 2px;
-}
-
-.cert-status.valid {
-    background: var(--success-bg);
-    color: var(--success-color);
-}
-
-.cert-status.expired {
-    background: var(--error-bg);
-    color: var(--error-color);
-}
-
-.cert-expiry {
-    font-size: 11px;
-    color: var(--text-secondary);
-}
-
-.add-cert-btn {
-    width: 100%;
-    padding: 8px 10px;
-    border: 1px dashed var(--border-color);
-    border-radius: 4px;
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    font-size: 12px;
-    transition: all 0.2s ease;
-}
-
-.add-cert-btn:hover {
-    border-color: var(--accent-color);
-    color: var(--accent-color);
-}
-
-.activity-list {
-    max-height: 150px;
-    overflow-y: auto;
-}
-
-.activity-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.activity-item:last-child {
-    border-bottom: none;
-}
-
-.activity-icon {
-    color: var(--accent-color);
-    font-size: 14px;
-    width: 20px;
-    text-align: center;
-}
-
-.activity-info {
-    flex: 1;
-}
-
-.activity-text {
-    font-size: 13px;
-    color: var(--text-primary);
-    margin-bottom: 2px;
-}
-
-.activity-time {
-    font-size: 11px;
-    color: var(--text-secondary);
-}
-
-.profile-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 8px;
-}
-
-.profile-btn {
-    padding: 10px 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    color: var(--text-primary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    font-size: 11px;
-    transition: all 0.2s ease;
-}
-
-.save-btn {
-    background: var(--success-bg);
-    border-color: var(--success-color);
-    color: var(--success-color);
-}
-
-.save-btn:hover {
-    background: var(--success-color);
-    color: white;
-}
-
-.export-btn {
-    background: var(--info-bg);
-    border-color: var(--info-color);
-    color: var(--info-color);
-}
-
-.export-btn:hover {
-    background: var(--info-color);
-    color: white;
-}
-
-.logout-btn {
-    background: var(--warning-bg);
-    border-color: var(--warning-color);
-    color: var(--warning-color);
-}
-
-.logout-btn:hover {
-    background: var(--warning-color);
-    color: white;
-}
 
 /* Scrollbar styling */
-.profile-content::-webkit-scrollbar,
-.activity-list::-webkit-scrollbar {
+.profile-content::-webkit-scrollbar {
     width: 6px;
 }
 
-.profile-content::-webkit-scrollbar-track,
-.activity-list::-webkit-scrollbar-track {
+.profile-content::-webkit-scrollbar-track {
     background: var(--scrollbar-track);
 }
 
-.profile-content::-webkit-scrollbar-thumb,
-.activity-list::-webkit-scrollbar-thumb {
+.profile-content::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
     border-radius: 3px;
 } 

@@ -25,7 +25,7 @@
     height: 100% !important;
     background-color: var(--primary-bg);
     color: var(--text-primary);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: var(--font-normal);
     overflow: hidden; /* Prevent content overflow */
     position: relative; /* Ensure proper positioning */
@@ -926,13 +926,13 @@
 /* Context Dropdown */
 .context-dropdown {
     position: absolute;
-    bottom: 100%;
+    top: 100%;
     left: 0;
     right: 0;
     background-color: var(--input-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    margin-bottom: 8px;
+    margin-top: 8px;
     max-height: 200px;
     overflow-y: auto;
     z-index: 1000;
