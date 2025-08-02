@@ -176,7 +176,7 @@
 .waypoints-container {
     flex: 1;
     min-height: 0;
-    overflow: hidden; /* Prevent overflow */
+    overflow: visible; /* Allow scrolling in child elements */
     position: relative; /* Ensure proper positioning */
     box-sizing: border-box; /* Ensure proper box model */
 }
@@ -187,8 +187,34 @@
 .waypoints-table-container {
     max-height: 300px;
     overflow-y: auto;
+    overflow-x: hidden;
     border: 1px solid var(--border-color);
     border-radius: 4px;
+    position: relative;
+    /* Enable smooth scrolling */
+    scroll-behavior: smooth;
+    /* Prevent scrollbar issues */
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-blue) var(--secondary-bg);
+}
+
+/* Custom scrollbar for webkit browsers */
+.waypoints-table-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.waypoints-table-container::-webkit-scrollbar-track {
+    background: var(--secondary-bg);
+    border-radius: 4px;
+}
+
+.waypoints-table-container::-webkit-scrollbar-thumb {
+    background: var(--accent-blue);
+    border-radius: 4px;
+}
+
+.waypoints-table-container::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
 }
 
 .waypoints-table {

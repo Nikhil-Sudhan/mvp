@@ -326,10 +326,12 @@ class MapControlsManager {
         this.states.isMeasuring = !this.states.isMeasuring;
         
         if (this.states.isMeasuring) {
+            this.startMeasurement();
             if (window.avionixisAPI && window.avionixisAPI.showNotification) {
                 window.avionixisAPI.showNotification('Measure tool activated - Click to start measuring', 'info');
             }
         } else {
+            this.stopMeasurement();
             if (window.avionixisAPI && window.avionixisAPI.showNotification) {
                 window.avionixisAPI.showNotification('Measure tool deactivated', 'info');
             }
@@ -341,16 +343,117 @@ class MapControlsManager {
         }
     }
 
-    toggleFullscreen() {
-        const centerContent = document.querySelector('.center-content');
+    startMeasurement() {
+        if (!this.viewer) return;
         
-        if (!centerContent) {
-            console.error('Center content element not found');
+        this.measurementHandler = new Cesium.ScreenSpaceEventHandler(this.viewer.scene.canvas);
+        this.measurementPoints = [];
+        this.measurementEntity = null;
+        
+        this.measurementHandler.setInputAction((event) => {
+            const pickedPosition = this.viewer.camera.pickEllipsoid(
+                event.position, 
+                this.viewer.scene.globe.ellipsoid
+            );
+            
+            if (pickedPosition) {
+                this.measurementPoints.push(pickedPosition);
+                
+                if (this.measurementPoints.length === 1) {
+                    // Create measurement line
+                    this.measurementEntity = this.viewer.entities.add({
+                        polyline: {
+                            positions: new Cesium.CallbackProperty(() => {
+                                return this.measurementPoints;
+                            }, false),
+                            width: 3,
+                            material: Cesium.Color.YELLOW,
+                            clampToGround: true
+                        }
+                    });
+                } else if (this.measurementPoints.length === 2) {
+                    // Calculate and display distance
+                    const distance = this.calculateDistance(this.measurementPoints[0], this.measurementPoints[1]);
+                    const midPoint = Cesium.Cartesian3.lerp(this.measurementPoints[0], this.measurementPoints[1], 0.5, new Cesium.Cartesian3());
+                    
+                    this.viewer.entities.add({
+                        position: midPoint,
+                        label: {
+                            text: `${distance.toFixed(2)} km`,
+                            font: '14pt sans-serif',
+                            fillColor: Cesium.Color.YELLOW,
+                            outlineColor: Cesium.Color.BLACK,
+                            outlineWidth: 2,
+                            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                            pixelOffset: new Cesium.Cartesian2(0, -10)
+                        }
+                    });
+                    
+                    // Reset for next measurement
+                    this.measurementPoints = [];
+                    this.measurementEntity = null;
+                }
+            }
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    }
+
+    stopMeasurement() {
+        if (this.measurementHandler) {
+            this.measurementHandler.destroy();
+            this.measurementHandler = null;
+        }
+        
+        if (this.measurementEntity) {
+            this.viewer.entities.remove(this.measurementEntity);
+            this.measurementEntity = null;
+        }
+        
+        this.measurementPoints = [];
+    }
+
+    calculateDistance(point1, point2) {
+        const cartographic1 = Cesium.Cartographic.fromCartesian(point1);
+        const cartographic2 = Cesium.Cartographic.fromCartesian(point2);
+        
+        const lat1 = Cesium.Math.toRadians(Cesium.Math.toDegrees(cartographic1.latitude));
+        const lon1 = Cesium.Math.toRadians(Cesium.Math.toDegrees(cartographic1.longitude));
+        const lat2 = Cesium.Math.toRadians(Cesium.Math.toDegrees(cartographic2.latitude));
+        const lon2 = Cesium.Math.toRadians(Cesium.Math.toDegrees(cartographic2.longitude));
+        
+        const R = 6371; // Earth's radius in km
+        const dLat = lat2 - lat1;
+        const dLon = lon2 - lon1;
+        
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1) * Math.cos(lat2) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        
+        return R * c;
+    }
+
+    toggleFullscreen() {
+        // Try multiple possible container elements
+        const possibleContainers = [
+            document.querySelector('.center-content'),
+            document.querySelector('#cesiumContainer'),
+            document.querySelector('.map-container'),
+            document.querySelector('.main-content'),
+            document.body
+        ];
+        
+        const container = possibleContainers.find(el => el !== null);
+        
+        if (!container) {
+            console.error('No suitable container found for fullscreen');
+            if (window.avionixisAPI && window.avionixisAPI.showNotification) {
+                window.avionixisAPI.showNotification('Could not find container for fullscreen', 'error');
+            }
             return;
         }
 
         if (!document.fullscreenElement) {
-            centerContent.requestFullscreen().then(() => {
+            container.requestFullscreen().then(() => {
                 this.states.isFullscreen = true;
                 this.updateFullscreenButton();
                 if (window.avionixisAPI && window.avionixisAPI.showNotification) {
@@ -416,8 +519,10 @@ class MapControlsManager {
                 }
                 break;
             case 'erase':
-                if (window.avionixisAPI && window.avionixisAPI.showNotification) {
-                    window.avionixisAPI.showNotification('Erase tool selected - Click on shapes to remove', 'info');
+                if (this.drawingTools) {
+                    this.drawingTools.selectTool('erase');
+                } else {
+                    console.error('Drawing tools not available');
                 }
                 break;
             default:
@@ -431,9 +536,14 @@ class MapControlsManager {
             this.drawingTools.cancelDrawing();
         }
 
+        // Stop measurement if active
+        if (this.states.isMeasuring) {
+            this.stopMeasurement();
+            this.states.isMeasuring = false;
+        }
+
         // Reset tool states
         this.activeTool = null;
-        this.states.isMeasuring = false;
 
         // Update UI
         document.querySelectorAll('.draw-tool-btn, .map-btn').forEach(btn => {
@@ -443,6 +553,16 @@ class MapControlsManager {
 
     clearAll() {
         if (confirm('Clear all drawn shapes? This cannot be undone.')) {
+            // Stop any active measurement
+            if (this.states.isMeasuring) {
+                this.stopMeasurement();
+                this.states.isMeasuring = false;
+                if (this.controlButtons.measure) {
+                    this.controlButtons.measure.classList.remove('active');
+                }
+            }
+            
+            // Clear drawing tools
             if (this.drawingTools) {
                 this.drawingTools.clearAll();
             } else {
@@ -450,7 +570,7 @@ class MapControlsManager {
                 if (this.viewer) {
                     const entitiesToRemove = [];
                     this.viewer.entities.values.forEach(entity => {
-                        if (entity.polygon) {
+                        if (entity.polygon || entity.polyline) {
                             entitiesToRemove.push(entity);
                         }
                     });

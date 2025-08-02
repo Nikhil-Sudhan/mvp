@@ -12,7 +12,8 @@ class DrawingTools {
         this.tools = {
             POLYGON: 'polygon',
             SQUARE: 'square',
-            CIRCLE: 'circle'
+            CIRCLE: 'circle',
+            ERASE: 'erase'
         };
         
         this.init();
@@ -23,23 +24,19 @@ class DrawingTools {
     }
 
     setupMapControls() {
-        // Listen for tool selection from map controls
-        document.querySelectorAll('.draw-tool-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const tool = e.currentTarget.dataset.tool;
-                this.selectTool(tool);
+        // Listen for tool selection from map controls - only if not already set up
+        if (!this.eventListenersSetup) {
+            document.querySelectorAll('.draw-tool-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const tool = e.currentTarget.dataset.tool;
+                    this.selectTool(tool);
+                });
             });
-        });
-
-        // Clear all button
-        const clearAllBtn = document.getElementById('clearAllTool');
-        if (clearAllBtn) {
-            clearAllBtn.addEventListener('click', () => {
-                if (confirm('Clear all drawn shapes? This cannot be undone.')) {
-                    this.clearAll();
-                }
-            });
+            
+            this.eventListenersSetup = true;
         }
+
+        // Note: Clear all button is handled by MapControlsManager to avoid duplicates
     }
 
     selectTool(toolType) {
@@ -90,11 +87,18 @@ class DrawingTools {
             case this.tools.CIRCLE:
                 this.startCircleDrawing();
                 break;
+            case this.tools.ERASE:
+                this.startEraseMode();
+                break;
         }
 
         // Add status message
         if (this.aiAgent) {
-            this.aiAgent.addAIMessage(`🎨 Drawing ${toolType} - Left click to add points, Right click to finish/cancel`);
+            if (toolType === this.tools.ERASE) {
+                this.aiAgent.addAIMessage(`🗑️ Erase mode - Click on shapes to remove them`);
+            } else {
+                this.aiAgent.addAIMessage(`🎨 Drawing ${toolType} - Left click to add points, Right click to finish/cancel`);
+            }
         }
 
         // Started drawing
@@ -317,6 +321,36 @@ class DrawingTools {
         }
         
         return positions;
+    }
+
+    startEraseMode() {
+        this.drawingHandler.setInputAction((event) => {
+            const pickedObject = this.viewer.scene.pick(event.position);
+            
+            if (pickedObject && pickedObject.id && pickedObject.id.polygon) {
+                // Remove the entity
+                this.viewer.entities.remove(pickedObject.id);
+                
+                // Remove from waypoints if it exists
+                if (this.aiAgent && this.aiAgent.waypoints) {
+                    const waypointIndex = this.aiAgent.waypoints.findIndex(w => w.entityId === pickedObject.id.id);
+                    if (waypointIndex !== -1) {
+                        this.aiAgent.waypoints.splice(waypointIndex, 1);
+                        this.aiAgent.saveWaypoints();
+                        this.aiAgent.updateWaypointsList();
+                    }
+                }
+                
+                if (this.aiAgent) {
+                    this.aiAgent.addAIMessage(`🗑️ Shape removed successfully`);
+                }
+            }
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+        // Right click to exit erase mode
+        this.drawingHandler.setInputAction(() => {
+            this.stopDrawing();
+        }, Cesium.ScreenSpaceEventType.RIGHT_CLICK);
     }
 
     finishPolygon() {

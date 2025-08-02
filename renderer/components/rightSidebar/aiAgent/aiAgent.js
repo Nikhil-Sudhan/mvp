@@ -10,6 +10,7 @@ class AIAgent {
         this.selectedWaypoints = [];
         this.selectedMode = 'surveillance'; // Default mode
         this.selectedModel = 'auto'; // Default model
+        this.saveInProgress = false; // Prevent duplicate saves
         
         // Force immediate setup
         setTimeout(() => {
@@ -25,12 +26,16 @@ class AIAgent {
             
             // Load existing waypoints
             this.waypoints = await this.waypointStorage.loadWaypoints();
+            console.log(`Loaded ${this.waypoints.length} waypoints from storage`);
             
             // Set up event listeners
             this.setupEventListeners();
             
             // Update waypoints list
             this.updateWaypointsList();
+            
+            // Restore waypoints to the map
+            this.restoreWaypointsToMap();
             
             // Force update after a short delay to ensure DOM is ready
             setTimeout(() => {
@@ -351,7 +356,16 @@ class AIAgent {
             return;
         }
 
+        // Prevent duplicate saves
+        if (this.currentPolygon.saved || this.saveInProgress) {
+            console.log('Waypoint already saved or save in progress, skipping duplicate save');
+            return;
+        }
+
         try {
+            // Mark as being saved to prevent duplicates
+            this.currentPolygon.saved = true;
+            this.saveInProgress = true;
             console.log('Creating waypoint...');
             // Generate default name
             const waypointCount = this.waypoints.length + 1;
@@ -379,9 +393,19 @@ class AIAgent {
 
             console.log(`Converted ${coordinates.length} coordinates`);
 
+            // Generate unique ID with entity ID to prevent duplicates
+            const uniqueId = `${Date.now()}_${this.currentPolygon.entity.id}`;
+            
+            // Check if waypoint with this entity ID already exists
+            const existingWaypoint = this.waypoints.find(w => w.entityId === this.currentPolygon.entity.id);
+            if (existingWaypoint) {
+                console.log('Waypoint with this entity already exists, skipping duplicate creation');
+                return;
+            }
+
             // Create waypoint object
             const waypoint = {
-                id: Date.now().toString(),
+                id: uniqueId,
                 name: finalName,
                 type: this.currentPolygon.type,
                 coordinates: coordinates,
@@ -402,7 +426,7 @@ class AIAgent {
             this.waypoints.push(waypoint);
             console.log(`Total waypoints: ${this.waypoints.length}`);
             
-            // Save to storage
+            // Save to storage (collective waypoints file)
             await this.waypointStorage.saveWaypoints(this.waypoints);
             console.log('Saved to storage');
             
@@ -428,6 +452,9 @@ class AIAgent {
         } catch (error) {
             console.error('Failed to save waypoint:', error);
             this.addAIMessage(`❌ Failed to save waypoint: ${error.message}`);
+        } finally {
+            // Reset save flag
+            this.saveInProgress = false;
         }
     }
 
@@ -482,8 +509,8 @@ class AIAgent {
             // Save to storage
             await this.waypointStorage.saveWaypoints(this.waypoints);
             
-            // Save individual waypoint JSON file
-            await this.saveIndividualWaypointFile(waypoint);
+            // Individual file save is handled by saveCurrentWaypointAuto only
+            // Removed duplicate call to prevent double file creation
             
             // Update UI
             this.updateWaypointsList();
@@ -652,10 +679,10 @@ class AIAgent {
         input.select();
         
         // Handle save on Enter or blur
-        const saveEdit = () => {
+        const saveEdit = async () => {
             const newName = input.value.trim();
             if (newName && newName !== currentName) {
-                this.updateWaypointName(waypointId, newName);
+                await this.updateWaypointName(waypointId, newName);
             }
             
             // Restore the name element
@@ -676,16 +703,30 @@ class AIAgent {
         });
     }
 
-    updateWaypointName(waypointId, newName) {
+    async updateWaypointName(waypointId, newName) {
         const waypoint = this.waypoints.find(w => w.id === waypointId);
         if (waypoint) {
+            const oldName = waypoint.name;
             waypoint.name = newName;
-            console.log(`Updated waypoint ${waypointId} name to: ${newName}`);
+            console.log(`Updated waypoint ${waypointId} name from "${oldName}" to: "${newName}"`);
             
             // Update the display
             const nameElement = document.querySelector(`.waypoint-name[data-waypoint-id="${waypointId}"]`);
             if (nameElement) {
                 nameElement.textContent = newName;
+            }
+            
+            // Save to storage
+            await this.waypointStorage.saveWaypoints(this.waypoints);
+            
+            // Update individual waypoint file
+            await this.updateIndividualWaypointFile(waypoint, oldName);
+            
+            // Update track mission waypoints
+            this.updateTrackMissionWithAllWaypoints();
+            
+            if (this.aiAgent) {
+                this.addAIMessage(`✅ Waypoint renamed from "${oldName}" to "${newName}"`);
             }
         }
     }
@@ -711,6 +752,10 @@ class AIAgent {
         }
 
         try {
+            // Find the waypoint before removing it
+            const waypoint = this.waypoints.find(w => w.id === waypointId);
+            const waypointName = waypoint ? waypoint.name : 'Unknown';
+            
             // Remove from array
             this.waypoints = this.waypoints.filter(w => w.id !== waypointId);
             
@@ -720,17 +765,172 @@ class AIAgent {
             // Save to storage
             await this.waypointStorage.saveWaypoints(this.waypoints);
             
+            // Delete individual waypoint file
+            await this.deleteIndividualWaypointFile(waypointName);
+            
             // Update UI
             this.updateWaypointsList();
             
             // Update track mission with all waypoints
             this.updateTrackMissionWithAllWaypoints();
             
-            this.addAIMessage('✅ Waypoint deleted successfully!');
+            this.addAIMessage(`✅ Waypoint "${waypointName}" deleted successfully!`);
             
         } catch (error) {
             console.error('Failed to delete waypoint:', error);
             this.addAIMessage(`❌ Failed to delete waypoint: ${error.message}`);
+        }
+    }
+
+    // Restore waypoints to the map when app loads
+    async restoreWaypointsToMap() {
+        try {
+            // Wait for Cesium viewer to be available
+            if (!window.viewer && !window.cesiumViewer) {
+                console.log('Cesium viewer not available yet, retrying in 1 second...');
+                setTimeout(() => this.restoreWaypointsToMap(), 1000);
+                return;
+            }
+
+            const viewer = window.viewer || window.cesiumViewer;
+            if (!viewer) {
+                console.warn('Cesium viewer not found, cannot restore waypoints to map');
+                return;
+            }
+
+            console.log(`Restoring ${this.waypoints.length} waypoints to map`);
+            
+            for (const waypoint of this.waypoints) {
+                try {
+                    // Convert coordinates back to Cartesian3
+                    const positions = waypoint.coordinates.map(coord => 
+                        Cesium.Cartesian3.fromDegrees(coord.lon, coord.lat, coord.alt || 100)
+                    );
+
+                    // Create entity based on waypoint type
+                    let entity;
+                    if (waypoint.type === 'circle') {
+                        entity = viewer.entities.add({
+                            id: waypoint.entityId,
+                            polygon: {
+                                hierarchy: new Cesium.PolygonHierarchy(positions),
+                                material: Cesium.Color.CYAN.withAlpha(0.3),
+                                outline: true,
+                                outlineColor: Cesium.Color.CYAN,
+                                outlineWidth: 2,
+                                height: 0,
+                                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                                extrudedHeight: 0
+                            }
+                        });
+                    } else {
+                        // Default polygon rendering for squares and polygons
+                        entity = viewer.entities.add({
+                            id: waypoint.entityId,
+                            polygon: {
+                                hierarchy: new Cesium.PolygonHierarchy(positions),
+                                material: Cesium.Color.CYAN.withAlpha(0.3),
+                                outline: true,
+                                outlineColor: Cesium.Color.CYAN,
+                                outlineWidth: 2,
+                                height: 0,
+                                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                                extrudedHeight: 0
+                            }
+                        });
+                    }
+
+                    console.log(`Restored waypoint "${waypoint.name}" to map`);
+                } catch (error) {
+                    console.error(`Failed to restore waypoint "${waypoint.name}" to map:`, error);
+                }
+            }
+
+            if (this.waypoints.length > 0) {
+                this.addAIMessage(`✅ Restored ${this.waypoints.length} waypoints to the map`);
+            }
+        } catch (error) {
+            console.error('Failed to restore waypoints to map:', error);
+        }
+    }
+
+    // Update individual waypoint file when name changes
+    async updateIndividualWaypointFile(waypoint, oldName) {
+        try {
+            // Check if file system is available
+            if (!this.waypointStorage || !this.waypointStorage.useFileSystem) {
+                console.log('File system not available, skipping individual waypoint file update');
+                return;
+            }
+
+            // Delete old file if name changed
+            if (oldName && oldName !== waypoint.name) {
+                const oldFileName = `${oldName.replace(/[<>:"/\\|?*]/g, '_')}.json`;
+                const oldFilePath = require('path').join(process.cwd(), 'waypoints', oldFileName);
+                
+                try {
+                    if (require('fs').existsSync(oldFilePath)) {
+                        require('fs').unlinkSync(oldFilePath);
+                        console.log(`Deleted old waypoint file: ${oldFilePath}`);
+                    }
+                } catch (error) {
+                    console.warn('Failed to delete old waypoint file:', error);
+                }
+            }
+
+            // Create new file with updated name
+            const sanitizedName = waypoint.name.replace(/[<>:"/\\|?*]/g, '_');
+            const fileName = `${sanitizedName}.json`;
+            const filePath = require('path').join(process.cwd(), 'waypoints', fileName);
+            
+            // Create waypoint data for individual file
+            const waypointData = {
+                version: '1.0',
+                created: waypoint.created,
+                waypoint: waypoint,
+                metadata: {
+                    savedAt: new Date().toISOString(),
+                    source: 'Sky Loom Drawing Tools',
+                    format: 'individual',
+                    lastModified: new Date().toISOString()
+                }
+            };
+
+            // Write the updated file
+            require('fs').writeFileSync(filePath, JSON.stringify(waypointData, null, 2), 'utf8');
+            console.log(`Updated individual waypoint file: ${filePath}`);
+            
+        } catch (error) {
+            console.error('Failed to update individual waypoint file:', error);
+            // Don't throw error to avoid breaking the main waypoint saving process
+        }
+    }
+
+    // Delete individual waypoint file
+    async deleteIndividualWaypointFile(waypointName) {
+        try {
+            // Check if file system is available
+            if (!this.waypointStorage || !this.waypointStorage.useFileSystem) {
+                console.log('File system not available, skipping individual waypoint file deletion');
+                return;
+            }
+
+            // Sanitize filename
+            const sanitizedName = waypointName.replace(/[<>:"/\\|?*]/g, '_');
+            const fileName = `${sanitizedName}.json`;
+            const filePath = require('path').join(process.cwd(), 'waypoints', fileName);
+            
+            // Delete the file
+            if (require('fs').existsSync(filePath)) {
+                require('fs').unlinkSync(filePath);
+                console.log(`Deleted individual waypoint file: ${filePath}`);
+            } else {
+                console.warn(`Waypoint file not found for deletion: ${filePath}`);
+            }
+            
+        } catch (error) {
+            console.error('Failed to delete individual waypoint file:', error);
+            // Don't throw error to avoid breaking the main waypoint deletion process
         }
     }
 
@@ -819,6 +1019,8 @@ class AIAgent {
             const sanitizedName = waypoint.name.replace(/[<>:"/\\|?*]/g, '_');
             const fileName = `${sanitizedName}.json`;
             const filePath = require('path').join(process.cwd(), 'waypoints', fileName);
+            
+            // Removed file existence check since we fixed the duplicate calling issue
             
             // Create waypoint data for individual file
             const waypointData = {

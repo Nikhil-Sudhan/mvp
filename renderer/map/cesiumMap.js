@@ -125,12 +125,8 @@ async function setupCesiumMap() {
 
         window.avionixisAPI?.showNotification('Cesium map with satellite imagery loaded', 'success');
         
-        // Initialize map controls manager after viewer is ready
+        // MapControlsManager is initialized in mapControlsManager.js - no need to create duplicate here
         setTimeout(() => {
-            if (window.MapControlsManager) {
-                window.mapControlsManager = new MapControlsManager();
-            }
-            
             // Initialize drone configuration manager if available
             if (typeof DroneConfigurationManager !== 'undefined') {
                 window.droneConfigManager = new DroneConfigurationManager();

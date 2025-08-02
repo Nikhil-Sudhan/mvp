@@ -176,10 +176,10 @@ class SidebarManager {
         
         // Initialize AIAgent when panel is loaded
         if (panelName === 'aiAgent') {
-            setTimeout(() => {
-                if (window.AIAgent) {
-                            window.aiAgentInstance = new window.AIAgent();
-                } else {
+                        setTimeout(() => {
+                if (window.AIAgent && !window.aiAgentInstance) {
+                    window.aiAgentInstance = new window.AIAgent();
+                } else if (!window.AIAgent) {
                     console.error('❌ AIAgent class not found when loading panel');
                 }
             }, 200);

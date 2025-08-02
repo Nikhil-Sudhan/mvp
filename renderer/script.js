@@ -20,8 +20,8 @@ function init() {
             window.sidebarManager.toggleRightSidebar('telemetry');
         }
         
-        // Initialize AI Agent instance when panel is opened
-        if (window.AIAgent) {
+        // Initialize AI Agent instance when panel is opened (only if not already exists)
+        if (window.AIAgent && !window.aiAgentInstance) {
             window.aiAgentInstance = new window.AIAgent();
         }
         
