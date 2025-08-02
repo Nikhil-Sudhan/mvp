@@ -111,17 +111,22 @@ class DrawingTools {
                 this.activePoints.push(pickedPosition);
                 
                 if (this.activePoints.length === 1) {
-                    // Create polygon entity
+                    // Create polygon entity with callback property for dynamic updates
                     this.activeEntity = this.viewer.entities.add({
                         polygon: {
                             hierarchy: new Cesium.CallbackProperty(() => {
-                                return new Cesium.PolygonHierarchy(this.activePoints);
+                                if (this.activePoints.length > 0) {
+                                    return new Cesium.PolygonHierarchy(this.activePoints);
+                                }
+                                return new Cesium.PolygonHierarchy([]);
                             }, false),
                             material: Cesium.Color.YELLOW.withAlpha(0.3),
                             outline: true,
                             outlineColor: Cesium.Color.YELLOW,
                             outlineWidth: 2,
-                            height: 0
+                            height: 0,
+                            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                            extrudedHeight: 0
                         }
                     });
                 }
@@ -237,39 +242,44 @@ class DrawingTools {
     }
 
     previewSquare(startPoint, endPoint) {
+        const positions = this.createSquarePositions(startPoint, endPoint);
+        
         if (this.activeEntity) {
             this.viewer.entities.remove(this.activeEntity);
         }
-
-        const positions = this.createSquarePositions(startPoint, endPoint);
+        
         this.activeEntity = this.viewer.entities.add({
             polygon: {
-                hierarchy: positions,
+                hierarchy: new Cesium.PolygonHierarchy(positions),
                 material: Cesium.Color.BLUE.withAlpha(0.3),
                 outline: true,
                 outlineColor: Cesium.Color.BLUE,
                 outlineWidth: 2,
-                height: 0
+                height: 0,
+                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                extrudedHeight: 0
             }
         });
     }
 
     previewCircle(centerPoint, edgePoint) {
-        if (this.activeEntity) {
-            this.viewer.entities.remove(this.activeEntity);
-        }
-
         const radius = Cesium.Cartesian3.distance(centerPoint, edgePoint);
         const positions = this.createCirclePositions(centerPoint, radius);
         
+        if (this.activeEntity) {
+            this.viewer.entities.remove(this.activeEntity);
+        }
+        
         this.activeEntity = this.viewer.entities.add({
             polygon: {
-                hierarchy: positions,
+                hierarchy: new Cesium.PolygonHierarchy(positions),
                 material: Cesium.Color.GREEN.withAlpha(0.3),
                 outline: true,
                 outlineColor: Cesium.Color.GREEN,
                 outlineWidth: 2,
-                height: 0
+                height: 0,
+                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                extrudedHeight: 0
             }
         });
     }
@@ -335,9 +345,15 @@ class DrawingTools {
             return;
         }
 
-        // Update entity with final styling
+        // Update entity with final styling and fix hierarchy to prevent further updates
         this.activeEntity.polygon.material = Cesium.Color.CYAN.withAlpha(0.3);
         this.activeEntity.polygon.outlineColor = Cesium.Color.CYAN;
+        this.activeEntity.polygon.heightReference = Cesium.HeightReference.CLAMP_TO_GROUND;
+        this.activeEntity.polygon.extrudedHeight = 0;
+        
+        // Replace dynamic hierarchy with fixed hierarchy to prevent floating
+        const finalPoints = this.activePoints.slice();
+        this.activeEntity.polygon.hierarchy = new Cesium.PolygonHierarchy(finalPoints);
 
         // Prepare for waypoint saving
         this.aiAgent.currentPolygon = {

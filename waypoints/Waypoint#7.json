@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "created": "2025-08-02T20:30:13.415Z",
+  "waypoint": {
+    "id": "1754166613415",
+    "name": "Waypoint#7",
+    "type": "square",
+    "coordinates": [
+      {
+        "lat": 9.634257045213404,
+        "lon": 77.7388549587758,
+        "alt": 100
+      },
+      {
+        "lat": 9.634257045213404,
+        "lon": 77.75485264238736,
+        "alt": 100
+      },
+      {
+        "lat": 9.650254728824967,
+        "lon": 77.75485264238736,
+        "alt": 100
+      },
+      {
+        "lat": 9.650254728824969,
+        "lon": 77.7388549587758,
+        "alt": 100
+      }
+    ],
+    "created": "2025-08-02T20:30:13.415Z",
+    "entityId": "8df1c083-32ac-4778-91c4-42d908219308",
+    "description": "square waypoint created via drawing tools",
+    "tags": [
+      "square",
+      "waypoint",
+      "drawn"
+    ],
+    "metadata": {
+      "pointCount": 4,
+      "area": 0.00025592588093559243,
+      "perimeter": 0.0639907344462447
+    }
+  },
+  "metadata": {
+    "savedAt": "2025-08-02T20:30:13.417Z",
+    "source": "Sky Loom Drawing Tools",
+    "format": "individual"
+  }
+}

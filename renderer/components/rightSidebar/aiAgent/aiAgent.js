@@ -406,6 +406,10 @@ class AIAgent {
             await this.waypointStorage.saveWaypoints(this.waypoints);
             console.log('Saved to storage');
             
+            // Save individual waypoint JSON file
+            await this.saveIndividualWaypointFile(waypoint);
+            console.log('Saved individual waypoint file');
+            
             // Update UI
             console.log('Updating waypoints list...');
             this.updateWaypointsList();
@@ -477,6 +481,9 @@ class AIAgent {
             
             // Save to storage
             await this.waypointStorage.saveWaypoints(this.waypoints);
+            
+            // Save individual waypoint JSON file
+            await this.saveIndividualWaypointFile(waypoint);
             
             // Update UI
             this.updateWaypointsList();
@@ -797,6 +804,42 @@ class AIAgent {
             perimeter += Math.sqrt(dx * dx + dy * dy);
         }
         return perimeter;
+    }
+
+    // Save individual waypoint JSON file to waypoints folder
+    async saveIndividualWaypointFile(waypoint) {
+        try {
+            // Check if file system is available
+            if (!this.waypointStorage || !this.waypointStorage.useFileSystem) {
+                console.log('File system not available, skipping individual waypoint file save');
+                return;
+            }
+
+            // Sanitize filename (remove invalid characters)
+            const sanitizedName = waypoint.name.replace(/[<>:"/\\|?*]/g, '_');
+            const fileName = `${sanitizedName}.json`;
+            const filePath = require('path').join(process.cwd(), 'waypoints', fileName);
+            
+            // Create waypoint data for individual file
+            const waypointData = {
+                version: '1.0',
+                created: waypoint.created,
+                waypoint: waypoint,
+                metadata: {
+                    savedAt: new Date().toISOString(),
+                    source: 'Sky Loom Drawing Tools',
+                    format: 'individual'
+                }
+            };
+
+            // Write the file
+            require('fs').writeFileSync(filePath, JSON.stringify(waypointData, null, 2), 'utf8');
+            console.log(`Individual waypoint file saved: ${filePath}`);
+            
+        } catch (error) {
+            console.error('Failed to save individual waypoint file:', error);
+            // Don't throw error to avoid breaking the main waypoint saving process
+        }
     }
 
     // API methods for sending waypoints to backend
