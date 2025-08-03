@@ -17,7 +17,7 @@ async function setupCesiumMap() {
         }
         
         // Set the Cesium Ion access token for premium features
-        Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIxMDQ4NTQxZC1iYTdhLTQwMzAtOWQxMS1jYTU0YjY3ZDNhZTgiLCJpZCI6MjcxMjA5LCJpYXQiOjE3NTMzNzQ4NTV9.Q5xerWBCH6ggHU9p-U4CdIBJCHtrT5vwXVLRqGqS_1Y';
+        Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIxNjFkZDVjMS1iMTEyLTRlN2QtOGUzZC03OGMxNjE2YzRlNzUiLCJpZCI6MjcxMjA5LCJpYXQiOjE3NTQyNDk1ODN9.Yh-Qc2YpqaKzU0y-Lm41fSdiaesXPacG5UQFdh5IWAA';
 
         // Check if container exists
         const container = document.getElementById('cesiumContainer');

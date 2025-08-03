@@ -324,7 +324,7 @@ class DrawingTools {
     }
 
     startEraseMode() {
-        this.drawingHandler.setInputAction((event) => {
+        this.drawingHandler.setInputAction(async (event) => {
             const pickedObject = this.viewer.scene.pick(event.position);
             
             if (pickedObject && pickedObject.id && pickedObject.id.polygon) {
@@ -335,14 +335,26 @@ class DrawingTools {
                 if (this.aiAgent && this.aiAgent.waypoints) {
                     const waypointIndex = this.aiAgent.waypoints.findIndex(w => w.entityId === pickedObject.id.id);
                     if (waypointIndex !== -1) {
+                        const deletedWaypoint = this.aiAgent.waypoints[waypointIndex];
                         this.aiAgent.waypoints.splice(waypointIndex, 1);
-                        this.aiAgent.saveWaypoints();
+                        
+                        // Save waypoints to storage
+                        await this.aiAgent.waypointStorage.saveWaypoints(this.aiAgent.waypoints);
+                        
+                        // Delete individual waypoint file
+                        await this.aiAgent.deleteIndividualWaypointFile(deletedWaypoint.name);
+                        
+                        // Update UI
                         this.aiAgent.updateWaypointsList();
+                        
+                        if (this.aiAgent) {
+                            this.aiAgent.addAIMessage(`🗑️ Waypoint "${deletedWaypoint.name}" removed successfully`);
+                        }
+                    } else {
+                        if (this.aiAgent) {
+                            this.aiAgent.addAIMessage(`🗑️ Shape removed successfully`);
+                        }
                     }
-                }
-                
-                if (this.aiAgent) {
-                    this.aiAgent.addAIMessage(`🗑️ Shape removed successfully`);
                 }
             }
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
