@@ -62,8 +62,23 @@ class DrawingTools {
 
     startDrawing(toolType) {
         if (!this.viewer) {
-            console.error('Cesium viewer not available');
+            console.error('❌ Cesium viewer not available');
             return;
+        }
+
+        // Check if AI Agent is connected
+        if (!this.aiAgent) {
+            console.error('❌ AI Agent not connected to drawing tools');
+            console.log('🔧 Attempting to fix connection...');
+            
+            // Try to get AI Agent instance
+            if (window.aiAgentInstance) {
+                this.aiAgent = window.aiAgentInstance;
+                console.log('✅ AI Agent connection restored');
+            } else {
+                console.error('❌ AI Agent instance not available');
+                return;
+            }
         }
 
         this.isDrawing = true;
@@ -101,7 +116,7 @@ class DrawingTools {
             }
         }
 
-        // Started drawing
+        console.log(`🎨 Started drawing ${toolType}`);
     }
 
     startPolygonDrawing() {
@@ -111,28 +126,38 @@ class DrawingTools {
                 this.viewer.scene.globe.ellipsoid
             );
             
-            if (pickedPosition) {
+            if (pickedPosition && Cesium.defined(pickedPosition)) {
+                // Ensure we have valid coordinates
+                if (isNaN(pickedPosition.x) || isNaN(pickedPosition.y) || isNaN(pickedPosition.z)) {
+                    console.warn('Invalid position picked, skipping');
+                    return;
+                }
+                
                 this.activePoints.push(pickedPosition);
                 
                 if (this.activePoints.length === 1) {
-                    // Create polygon entity with callback property for dynamic updates
+                    // Create polygon entity with static hierarchy to prevent floating
                     this.activeEntity = this.viewer.entities.add({
                         polygon: {
-                            hierarchy: new Cesium.CallbackProperty(() => {
-                                if (this.activePoints.length > 0) {
-                                    return new Cesium.PolygonHierarchy(this.activePoints);
-                                }
-                                return new Cesium.PolygonHierarchy([]);
-                            }, false),
+                            hierarchy: new Cesium.PolygonHierarchy([pickedPosition]),
                             material: Cesium.Color.YELLOW.withAlpha(0.3),
                             outline: true,
                             outlineColor: Cesium.Color.YELLOW,
                             outlineWidth: 2,
-                            height: 0,
                             heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
                             extrudedHeight: 0
                         }
                     });
+                } else if (this.activeEntity && this.activePoints.length > 1) {
+                    // Create a new hierarchy with all valid points
+                    const validPoints = this.activePoints.filter(point => 
+                        Cesium.defined(point) && 
+                        !isNaN(point.x) && !isNaN(point.y) && !isNaN(point.z)
+                    );
+                    
+                    if (validPoints.length >= 2) {
+                        this.activeEntity.polygon.hierarchy = new Cesium.PolygonHierarchy(validPoints);
+                    }
                 }
             }
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
@@ -401,12 +426,22 @@ class DrawingTools {
         const finalPoints = this.activePoints.slice();
         this.activeEntity.polygon.hierarchy = new Cesium.PolygonHierarchy(finalPoints);
 
+        // Check if AI Agent is properly connected
+        if (!this.aiAgent) {
+            console.error('❌ AI Agent not connected to drawing tools');
+            this.stopDrawing();
+            return;
+        }
+
         // Prepare for waypoint saving
         this.aiAgent.currentPolygon = {
             entity: this.activeEntity,
             positions: this.activePoints.slice(),
             type: this.currentTool
         };
+        
+        // Emit drawing completed event for synchronization (disabled for now)
+        // this.emitDrawingEvent('drawingCompleted', this.aiAgent.currentPolygon);
         
         // Automatically save waypoint with default name
         this.aiAgent.saveCurrentWaypointAuto();
@@ -484,6 +519,12 @@ class DrawingTools {
                 this.finishPolygon();
             }
         }
+    }
+
+    // Emit drawing events for synchronization (disabled for now)
+    emitDrawingEvent(eventType, drawingData) {
+        // Disabled to prevent crashes
+        console.log(`📡 Drawing event emission disabled: ${eventType}`);
     }
 }
 

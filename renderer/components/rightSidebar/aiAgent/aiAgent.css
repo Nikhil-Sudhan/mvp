@@ -1347,4 +1347,130 @@
 .context-item.empty:hover {
     background-color: transparent;
     color: var(--text-secondary);
+}
+
+/* Waypoint Suggestions Dropdown Styles */
+.waypoint-suggestions-dropdown {
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3); /* Shadow above for drop-up */
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 4px; /* Space between dropdown and input */
+    animation: suggestionsSlideUp 0.2s ease-out; /* Changed animation for drop-up */
+    position: absolute;
+    bottom: 100%; /* Position above the input */
+    left: 0;
+    right: 0;
+    z-index: 1001;
+}
+
+@keyframes suggestionsSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px); /* Slide up from below */
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background-color: var(--accent-blue);
+    color: white;
+}
+
+.suggestion-item:hover i {
+    color: white;
+}
+
+.suggestion-item.selected {
+    background-color: var(--accent-blue);
+    color: white;
+}
+
+.suggestion-item.selected i {
+    color: white;
+}
+
+.suggestion-item.selected .waypoint-type {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.suggestion-item i {
+    color: var(--accent-blue);
+    font-size: var(--font-small);
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.suggestion-item .waypoint-name {
+    flex: 1;
+    font-weight: 500;
+    font-size: var(--font-small);
+}
+
+.suggestion-item .waypoint-type {
+    font-size: 10px;
+    color: var(--text-secondary);
+    text-transform: capitalize;
+    padding: 2px 6px;
+    background-color: var(--tertiary-bg);
+    border-radius: 4px;
+}
+
+.suggestion-item:hover .waypoint-type {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.suggestion-item.empty {
+    color: var(--text-secondary);
+    cursor: default;
+    font-style: italic;
+    padding: 12px;
+    text-align: center;
+}
+
+.suggestion-item.empty:hover {
+    background-color: transparent;
+    color: var(--text-secondary);
+}
+
+/* Scrollbar for suggestions dropdown */
+.waypoint-suggestions-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.waypoint-suggestions-dropdown::-webkit-scrollbar-track {
+    background: var(--secondary-bg);
+    border-radius: 3px;
+}
+
+.waypoint-suggestions-dropdown::-webkit-scrollbar-thumb {
+    background: var(--accent-blue);
+    border-radius: 3px;
+}
+
+.waypoint-suggestions-dropdown::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
 } 

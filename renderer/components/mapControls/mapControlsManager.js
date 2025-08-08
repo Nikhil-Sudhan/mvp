@@ -152,10 +152,23 @@ class MapControlsManager {
     initializeDrawingTools() {
         // Initialize drawing tools if the class is available
         if (window.DrawingTools && this.viewer) {
-            this.drawingTools = new window.DrawingTools(this.viewer, window.aiAgentInstance);
-            // Drawing tools initialized
+            // Wait for AI Agent instance to be available
+            if (window.aiAgentInstance) {
+                this.drawingTools = new window.DrawingTools(this.viewer, window.aiAgentInstance);
+                console.log('✅ Drawing tools initialized with AI Agent');
+            } else {
+                // Retry after a delay if AI Agent is not ready
+                setTimeout(() => {
+                    if (window.aiAgentInstance) {
+                        this.drawingTools = new window.DrawingTools(this.viewer, window.aiAgentInstance);
+                        console.log('✅ Drawing tools initialized with AI Agent (delayed)');
+                    } else {
+                        console.warn('❌ AI Agent instance not available for drawing tools');
+                    }
+                }, 1000);
+            }
         } else {
-            console.warn('Drawing tools not available');
+            console.warn('❌ Drawing tools or viewer not available');
         }
     }
 
@@ -597,6 +610,16 @@ class MapControlsManager {
 
     isReady() {
         return this.isInitialized && this.viewer !== null;
+    }
+
+    // Method to reinitialize drawing tools when AI Agent becomes available
+    reinitializeDrawingTools() {
+        if (window.aiAgentInstance && this.viewer && !this.drawingTools) {
+            this.drawingTools = new window.DrawingTools(this.viewer, window.aiAgentInstance);
+            console.log('✅ Drawing tools reinitialized with AI Agent');
+            return true;
+        }
+        return false;
     }
 
     // Utility methods

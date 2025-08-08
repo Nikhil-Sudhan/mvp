@@ -15,46 +15,9 @@ function initializeWebSocketDrone() {
         return;
     }
 
-    // Create the initial drone entity
-    websocketDrone = window.viewer.entities.add({
-        id: 'websocketDrone',
-        position: Cesium.Cartesian3.fromDegrees(
-            dronePosition.lon,
-            dronePosition.lat,
-            dronePosition.alt
-        ),
-        box: {
-            dimensions: new Cesium.Cartesian3(50, 50, 15),
-            material: Cesium.Color.YELLOW.withAlpha(0.9),
-            outline: true,
-            outlineColor: Cesium.Color.BLACK,
-            heightReference: Cesium.HeightReference.NONE
-        },
-        label: {
-            text: 'Drone 1',
-            font: '16pt sans-serif',
-            pixelOffset: new Cesium.Cartesian2(0, -90),
-            fillColor: Cesium.Color.WHITE,
-            outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 2,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            scale: 1.2,
-            heightReference: Cesium.HeightReference.NONE
-        }
-    });
-
-    // Fly to the drone
-    setTimeout(() => {
-        window.viewer.flyTo(websocketDrone, {
-            duration: 3.0,
-            offset: new Cesium.HeadingPitchRange(
-                Cesium.Math.toRadians(0),
-                Cesium.Math.toRadians(-45),
-                2000
-            )
-        });
-    }, 1000);
-
+    // Drone entity removed - only connect to WebSocket for data logging
+    console.log('🛸 WebSocket drone initialized (entity removed)');
+    
     // Connect to WebSocket
     connectWebSocket();
 }
@@ -108,6 +71,8 @@ function connectWebSocket() {
                     return;
                 }
                 
+                // Drone entity removed - no longer processing position updates
+                /*
                 // Ensure drone entity exists
                 if (!websocketDrone) {
                     initializeWebSocketDrone();
@@ -118,6 +83,7 @@ function connectWebSocket() {
                 } else {
                     updateDronePositionFromReal(currentPos, deltaData, droneData);
                 }
+                */
                 
             } catch (error) {
                 window.avionixisAPI?.showNotification('Error processing drone data: ' + error.message, 'error');
@@ -143,6 +109,8 @@ function connectWebSocket() {
 }
 
 function updateDronePositionFromReal(currentPos, deltaData, fullDroneData) {
+    // Drone entity removed - function disabled
+    /*
     if (!websocketDrone) {
         // Try to create the drone entity if it doesn't exist
         initializeWebSocketDrone();
@@ -203,6 +171,7 @@ function updateDronePositionFromReal(currentPos, deltaData, fullDroneData) {
     if (messageCount <= 3) {
         window.avionixisAPI?.showNotification(`Drone position updated! (${messageCount}/${3})`, 'success');
     }
+    */
 }
 
 function disconnectWebSocketDrone() {
@@ -213,6 +182,8 @@ function disconnectWebSocketDrone() {
 }
 
 function resetDronePosition() {
+    // Drone entity removed - function disabled
+    /*
     // Reset position to initial values (your actual coordinates)
     dronePosition = {
         lat: -35.3632622,
@@ -241,6 +212,7 @@ function resetDronePosition() {
     
     window.avionixisAPI?.showNotification('Drone position reset to actual coordinates', 'success');
     window.avionixisAPI?.updateStatusBar('right', `Alt: ${dronePosition.alt.toFixed(1)}m | MANUAL`);
+    */
 }
 
 // Export functions for global access

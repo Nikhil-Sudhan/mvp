@@ -180,6 +180,9 @@ class TrackMission {
     addNewMission(missionData) {
         this.missions.unshift(missionData);
         this.updateMissionTable();
+        
+        // Emit table change event for synchronization (disabled for now)
+        // this.emitTableChangeEvent('missionAdded', missionData);
     }
 
     updateMission(missionId, updateData) {
@@ -187,6 +190,9 @@ class TrackMission {
         if (mission) {
             Object.assign(mission, updateData);
             this.updateMissionTable();
+            
+            // Emit table change event for synchronization (disabled for now)
+            // this.emitTableChangeEvent('missionUpdated', { missionId, updateData });
         }
     }
 
@@ -198,12 +204,21 @@ class TrackMission {
         this.missions = [];
         this.currentPage = 1;
         this.updateMissionTable();
+        
+        // Emit table change event for synchronization (disabled for now)
+        // this.emitTableChangeEvent('missionsCleared', {});
     }
 
     loadMissions(missions) {
         this.missions = missions || [];
         this.currentPage = 1;
         this.updateMissionTable();
+    }
+
+    // Emit table change events for synchronization (disabled for now)
+    emitTableChangeEvent(eventType, changeData) {
+        // Disabled to prevent crashes
+        console.log(`📋 Table event emission disabled: ${eventType}`);
     }
 
 

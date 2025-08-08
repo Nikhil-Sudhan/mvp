@@ -11,7 +11,12 @@
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux"
   },
-  "keywords": ["drone", "control", "ide", "electron"],
+  "keywords": [
+    "drone",
+    "control",
+    "ide",
+    "electron"
+  ],
   "author": "Avionixis Team",
   "license": "MIT",
   "devDependencies": {
@@ -19,8 +24,10 @@
     "electron-builder": "^24.0.0"
   },
   "dependencies": {
+    "cesium": "^1.111.0",
+    "cors": "^2.8.5",
     "electron-store": "^8.1.0",
-    "cesium": "^1.111.0"
+    "express": "^5.1.0"
   },
   "build": {
     "appId": "com.avionixis.dronecontrol",
@@ -34,4 +41,4 @@
       "assets/**/*"
     ]
   }
-} 
+}

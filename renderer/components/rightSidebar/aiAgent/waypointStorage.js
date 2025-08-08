@@ -58,7 +58,12 @@ class WaypointStorage {
     async loadWaypoints() {
         try {
             if (this.useFileSystem) {
-                return await this.loadFromFile();
+                const waypoints = await this.loadFromFile();
+                
+                // Emit file change event for synchronization (disabled for now)
+                // this.emitFileChangeEvent('waypointsLoaded', { count: waypoints.length });
+                
+                return waypoints;
             } else {
                 return this.loadFromLocalStorage();
             }
@@ -76,6 +81,9 @@ class WaypointStorage {
             
             if (this.useFileSystem) {
                 await this.saveToFile(waypoints);
+                
+                // Emit file change event for synchronization (disabled for now)
+                // this.emitFileChangeEvent('waypointsSaved', { count: waypoints.length });
             }
             
             return true;
@@ -307,6 +315,12 @@ class WaypointStorage {
             console.error('Failed to clear waypoints:', error);
             return false;
         }
+    }
+
+    // Emit file change events for synchronization (disabled for now)
+    emitFileChangeEvent(eventType, fileData) {
+        // Disabled to prevent crashes
+        console.log(`📁 File event emission disabled: ${eventType}`);
     }
 }
 

@@ -16,6 +16,14 @@ class AIAgent {
         this.selectedContextWaypoints = []; // List of waypoint names selected via @
         this.contextWaypointsContainer = null; // Reference to the context display area
         
+        // Properties for waypoint suggestions dropdown
+        this.waypointSuggestionsVisible = false;
+        this.currentSuggestionsInput = null;
+        this.currentSuggestionIndex = -1; // For keyboard navigation
+        
+        // Waypoint synchronization manager
+        this.syncManager = null;
+        
         // Force immediate setup with multiple retries
         this.initWithRetries();
     }
@@ -63,6 +71,9 @@ class AIAgent {
             // Set up event listeners
             this.setupEventListeners();
             
+                    // Initialize simple waypoint synchronization
+        this.syncManager = new SimpleWaypointSync(this);
+            
             // Update waypoints list immediately
             this.updateWaypointsList();
             
@@ -78,6 +89,9 @@ class AIAgent {
             
             // Initialize context waypoints display
             this.initializeContextWaypointsDisplay();
+            
+            // Ensure drawing tools are connected
+            this.ensureDrawingToolsConnection();
             
             console.log('✅ AIAgent initialization completed');
             
@@ -132,28 +146,37 @@ class AIAgent {
             
             newChatInput.addEventListener('keydown', (e) => {
                 console.log('Chat input keydown:', e.key);
+                
+                // Handle waypoint suggestions navigation
+                if (this.waypointSuggestionsVisible) {
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        this.navigateSuggestions(e.key);
+                        return;
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.selectCurrentSuggestion();
+                        return;
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        this.hideWaypointSuggestions();
+                        return;
+                    }
+                }
+                
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     this.sendMessage();
                 }
             });
 
-            // Update start button state based on input
-            newChatInput.addEventListener('input', () => {
+            // Enhanced @ functionality for text input
+            newChatInput.addEventListener('input', (e) => {
+                this.handleTextInput(e);
                 this.updateStartButtonState();
             });
             
-            // Test click event
-            newChatInput.addEventListener('click', () => {
-                console.log('Chat input clicked!');
-            });
-            
-            // Test focus event
-            newChatInput.addEventListener('focus', () => {
-                console.log('Chat input focused!');
-            });
-            
-            console.log('✅ Chat input event listeners attached');
+            // Chat input listeners attached
         } else {
             console.error('❌ Chat input element not found');
         }
@@ -170,7 +193,7 @@ class AIAgent {
                 this.sendMessage();
             });
             
-            console.log('✅ Start button event listener attached');
+            // Start button event listener attached
         } else {
             console.error('❌ Start button element not found');
         }
@@ -193,7 +216,12 @@ class AIAgent {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('Context button clicked!');
-                this.toggleContextDropdown();
+                
+                // Show waypoint suggestions dropdown instead of context dropdown
+                const chatInput = document.getElementById('chat-input');
+                if (chatInput) {
+                    this.showWaypointSuggestions(chatInput, chatInput.value.length);
+                }
             });
         }
 
@@ -301,7 +329,18 @@ class AIAgent {
             }
         });
         
-        console.log('✅ All event listeners set up successfully');
+        // Add click outside listener for waypoint suggestions
+        document.addEventListener('click', (e) => {
+            if (this.waypointSuggestionsVisible) {
+                const suggestionsDropdown = document.getElementById('waypoint-suggestions-dropdown');
+                if (suggestionsDropdown && !suggestionsDropdown.contains(e.target) && 
+                    this.currentSuggestionsInput && !this.currentSuggestionsInput.contains(e.target)) {
+                    this.hideWaypointSuggestions();
+                }
+            }
+        });
+        
+        // All event listeners set up
     }
 
 
@@ -334,6 +373,14 @@ class AIAgent {
         // Clear input
         input.value = '';
         
+        // Get selected context waypoints
+        const contextWaypoints = this.getSelectedContextWaypoints();
+        console.log('📍 Context waypoints:', contextWaypoints);
+        
+        // Extract waypoint data for selected waypoints
+        const waypointData = this.getWaypointDataForContext(contextWaypoints);
+        console.log('🗺️ Waypoint data for API:', waypointData);
+        
         // Prepare command with mode and model context
         let command = message;
         if (this.selectedMode) {
@@ -343,17 +390,16 @@ class AIAgent {
             command = `[${this.selectedModel.toUpperCase()}] ${command}`;
         }
         
-        // Include selected context waypoints in the command
-        const contextWaypoints = this.getSelectedContextWaypoints();
-        if (contextWaypoints.length > 0) {
-            const waypointsList = contextWaypoints.map(name => `@${name}`).join(', ');
-            command = `${command} [Context Waypoints: ${waypointsList}]`;
-        }
-        
         console.log('📡 Final command:', command);
         
-        // Send to API
-        await this.sendToAPI(command);
+        // Send to appropriate API endpoint
+        if (waypointData.length > 0) {
+            // Use the new endpoint with waypoint data
+            await this.sendToAPIWithWaypoints(command, waypointData);
+        } else {
+            // Use the regular endpoint
+            await this.sendToAPI(command);
+        }
         
         // Switch back to start button
         this.showStartButton();
@@ -439,6 +485,67 @@ class AIAgent {
         } catch (error) {
             this.addAIMessage(`❌ Error: ${error.message}`);
         }
+    }
+
+    async sendToAPIWithWaypoints(command, waypointData) {
+        if (!this.droneCommandAPI) {
+            this.addAIMessage('API not available');
+            return;
+        }
+
+        try {
+            const result = await this.droneCommandAPI.sendCommandWithWaypoints(command, waypointData);
+            
+            if (result.success) {
+                this.addAIMessage(`✅ Command with waypoints sent: "${command}"`);
+                this.addAIMessage(`📍 Waypoints included: ${waypointData.length} waypoint(s)`);
+                if (result.data) {
+                    this.addAIMessage(`Response: ${JSON.stringify(result.data)}`);
+                    try {
+                        // Render mission response on Cesium map
+                        if (!window.apiMissionRenderer) {
+                            window.apiMissionRenderer = new ApiMissionRenderer();
+                        }
+                        window.apiMissionRenderer.renderFromApiResponse(result.data, { clearPrevious: true, flyTo: true });
+                        this.addAIMessage('🗺️ Rendered mission on map');
+                    } catch (e) {
+                        console.error('Failed to render mission on map:', e);
+                        this.addAIMessage('⚠️ Could not render mission on map');
+                    }
+                }
+            } else {
+                this.addAIMessage(`❌ Error: ${result.error}`);
+            }
+        } catch (error) {
+            this.addAIMessage(`❌ Error: ${error.message}`);
+        }
+    }
+
+    getWaypointDataForContext(contextWaypointNames) {
+        const waypointData = [];
+        
+        contextWaypointNames.forEach(waypointName => {
+            // Find the waypoint in our loaded waypoints
+            const waypoint = this.waypoints.find(w => w.name === waypointName);
+            if (waypoint) {
+                // Extract the waypoint data for the API
+                const apiWaypointData = {
+                    id: waypoint.id,
+                    name: waypoint.name,
+                    type: waypoint.type,
+                    coordinates: waypoint.coordinates,
+                    description: waypoint.description,
+                    tags: waypoint.tags,
+                    metadata: waypoint.metadata
+                };
+                waypointData.push(apiWaypointData);
+                console.log(`✅ Found waypoint data for "${waypointName}":`, apiWaypointData);
+            } else {
+                console.warn(`⚠️ Waypoint "${waypointName}" not found in loaded waypoints`);
+            }
+        });
+        
+        return waypointData;
     }
 
     addUserMessage(text) {
@@ -582,6 +689,9 @@ class AIAgent {
             // Add to waypoints array
             this.waypoints.push(waypoint);
             console.log(`Total waypoints: ${this.waypoints.length}`);
+            
+            // Emit waypoint created event for synchronization (disabled for now)
+            // this.emitWaypointEvent('waypointCreated', waypoint);
             
             // Save to storage (collective waypoints file)
             await this.waypointStorage.saveWaypoints(this.waypoints);
@@ -867,6 +977,9 @@ class AIAgent {
             waypoint.name = newName;
             console.log(`Updated waypoint ${waypointId} name from "${oldName}" to: "${newName}"`);
             
+            // Emit waypoint updated event for synchronization (disabled for now)
+            // this.emitWaypointEvent('waypointUpdated', waypoint);
+            
             // Update the display
             const nameElement = document.querySelector(`.waypoint-name[data-waypoint-id="${waypointId}"]`);
             if (nameElement) {
@@ -913,6 +1026,9 @@ class AIAgent {
             const waypoint = this.waypoints.find(w => w.id === waypointId);
             const waypointName = waypoint ? waypoint.name : 'Unknown';
             
+            // Emit waypoint deleted event for synchronization (disabled for now)
+            // this.emitWaypointEvent('waypointDeleted', waypoint);
+            
             // Remove from array
             this.waypoints = this.waypoints.filter(w => w.id !== waypointId);
             
@@ -937,6 +1053,12 @@ class AIAgent {
             console.error('Failed to delete waypoint:', error);
             this.addAIMessage(`❌ Failed to delete waypoint: ${error.message}`);
         }
+    }
+
+    // Emit waypoint events for synchronization (disabled for now)
+    emitWaypointEvent(eventType, waypointData) {
+        // Disabled to prevent crashes
+        console.log(`📡 Event emission disabled: ${eventType}`);
     }
 
     // Restore waypoints to the map when app loads
@@ -1287,7 +1409,7 @@ class AIAgent {
         };
 
         try {
-            const response = await fetch('http://localhost:8001/waypoints', {
+            const response = await fetch('http://localhost:8000/waypoints', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1424,6 +1546,187 @@ class AIAgent {
         }
     }
 
+    // Enhanced @ functionality for text input
+    handleTextInput(e) {
+        const input = e.target;
+        const value = input.value;
+        const cursorPos = input.selectionStart;
+        
+        // Check if @ was just typed
+        if (value[cursorPos - 1] === '@') {
+            console.log('@ symbol detected, showing waypoint suggestions');
+            this.showWaypointSuggestions(input, cursorPos);
+        } else if (this.waypointSuggestionsVisible) {
+            // Check if we should hide suggestions
+            const beforeCursor = value.substring(0, cursorPos);
+            const lastAtSymbol = beforeCursor.lastIndexOf('@');
+            
+            if (lastAtSymbol === -1) {
+                console.log('No @ symbol found, hiding suggestions');
+                this.hideWaypointSuggestions();
+            } else {
+                // Update suggestions based on what's typed after @
+                const searchTerm = beforeCursor.substring(lastAtSymbol + 1);
+                console.log('Updating suggestions with search term:', searchTerm);
+                this.updateWaypointSuggestions(input, lastAtSymbol, searchTerm);
+            }
+        }
+    }
+
+    showWaypointSuggestions(input, cursorPos) {
+        this.hideWaypointSuggestions(); // Hide any existing suggestions
+        
+        // Create suggestions dropdown
+        const suggestionsContainer = document.createElement('div');
+        suggestionsContainer.className = 'waypoint-suggestions-dropdown';
+        suggestionsContainer.id = 'waypoint-suggestions-dropdown';
+        
+        // Position the dropdown above the input (drop-up)
+        suggestionsContainer.style.position = 'absolute';
+        suggestionsContainer.style.left = '0';
+        suggestionsContainer.style.right = '0';
+        suggestionsContainer.style.bottom = '100%'; // Position above instead of below
+        suggestionsContainer.style.zIndex = '1001';
+        suggestionsContainer.style.marginBottom = '4px'; // Add some spacing
+        
+        // Add to the input container
+        const inputContainer = input.closest('.unified-input-container');
+        inputContainer.style.position = 'relative';
+        inputContainer.appendChild(suggestionsContainer);
+        
+        // Populate with waypoints
+        this.populateWaypointSuggestions(suggestionsContainer, '');
+        
+        this.waypointSuggestionsVisible = true;
+        this.currentSuggestionsInput = input;
+    }
+
+    hideWaypointSuggestions() {
+        const suggestionsDropdown = document.getElementById('waypoint-suggestions-dropdown');
+        if (suggestionsDropdown) {
+            suggestionsDropdown.remove();
+        }
+        this.waypointSuggestionsVisible = false;
+        this.currentSuggestionsInput = null;
+        this.currentSuggestionIndex = -1; // Reset navigation index
+    }
+
+    updateWaypointSuggestions(input, atPosition, searchTerm) {
+        const suggestionsDropdown = document.getElementById('waypoint-suggestions-dropdown');
+        if (suggestionsDropdown) {
+            this.populateWaypointSuggestions(suggestionsDropdown, searchTerm);
+        }
+    }
+
+    populateWaypointSuggestions(container, searchTerm) {
+        container.innerHTML = '';
+        
+        if (this.waypoints.length === 0) {
+            container.innerHTML = '<div class="suggestion-item empty">No waypoints available</div>';
+            return;
+        }
+        
+        // Filter waypoints based on search term
+        const filteredWaypoints = this.waypoints.filter(waypoint => 
+            waypoint.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        if (filteredWaypoints.length === 0) {
+            container.innerHTML = '<div class="suggestion-item empty">No waypoints found</div>';
+            return;
+        }
+        
+        // Add waypoint suggestions
+        filteredWaypoints.forEach((waypoint, index) => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.dataset.index = index;
+            item.innerHTML = `
+                <i class="fas fa-map-marker-alt"></i>
+                <span class="waypoint-name">${waypoint.name}</span>
+                <span class="waypoint-type">${waypoint.type}</span>
+            `;
+            
+            item.addEventListener('click', () => {
+                this.insertWaypointInText(waypoint.name);
+            });
+            
+            container.appendChild(item);
+        });
+        
+        // Reset navigation index
+        this.currentSuggestionIndex = -1;
+    }
+
+    // Keyboard navigation methods
+    navigateSuggestions(direction) {
+        const suggestionsDropdown = document.getElementById('waypoint-suggestions-dropdown');
+        if (!suggestionsDropdown) return;
+        
+        const items = suggestionsDropdown.querySelectorAll('.suggestion-item:not(.empty)');
+        if (items.length === 0) return;
+        
+        // Remove previous selection
+        if (this.currentSuggestionIndex >= 0 && this.currentSuggestionIndex < items.length) {
+            items[this.currentSuggestionIndex].classList.remove('selected');
+        }
+        
+        if (direction === 'ArrowDown') {
+            this.currentSuggestionIndex = (this.currentSuggestionIndex + 1) % items.length;
+        } else if (direction === 'ArrowUp') {
+            this.currentSuggestionIndex = this.currentSuggestionIndex <= 0 ? items.length - 1 : this.currentSuggestionIndex - 1;
+        }
+        
+        // Add selection to current item
+        if (this.currentSuggestionIndex >= 0 && this.currentSuggestionIndex < items.length) {
+            items[this.currentSuggestionIndex].classList.add('selected');
+            items[this.currentSuggestionIndex].scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    selectCurrentSuggestion() {
+        const suggestionsDropdown = document.getElementById('waypoint-suggestions-dropdown');
+        if (!suggestionsDropdown) return;
+        
+        const items = suggestionsDropdown.querySelectorAll('.suggestion-item:not(.empty)');
+        if (this.currentSuggestionIndex >= 0 && this.currentSuggestionIndex < items.length) {
+            const selectedItem = items[this.currentSuggestionIndex];
+            const waypointName = selectedItem.querySelector('.waypoint-name').textContent;
+            this.insertWaypointInText(waypointName);
+        }
+    }
+
+    insertWaypointInText(waypointName) {
+        const input = this.currentSuggestionsInput;
+        if (!input) return;
+        
+        const value = input.value;
+        const cursorPos = input.selectionStart;
+        const beforeCursor = value.substring(0, cursorPos);
+        const afterCursor = value.substring(cursorPos);
+        
+        // Find the last @ symbol before cursor
+        const lastAtSymbol = beforeCursor.lastIndexOf('@');
+        if (lastAtSymbol === -1) return;
+        
+        // Replace from @ to cursor with the waypoint name
+        const newValue = value.substring(0, lastAtSymbol) + `@${waypointName} ` + afterCursor;
+        input.value = newValue;
+        
+        // Set cursor position after the inserted waypoint
+        const newCursorPos = lastAtSymbol + waypointName.length + 2; // +2 for @ and space
+        input.setSelectionRange(newCursorPos, newCursorPos);
+        
+        // Hide suggestions
+        this.hideWaypointSuggestions();
+        
+        // Add to selected context waypoints
+        this.addContextWaypoint(waypointName);
+        
+        // Focus back to input
+        input.focus();
+    }
+
     addContextWaypoint(waypointName) {
         if (!this.selectedContextWaypoints.includes(waypointName)) {
             this.selectedContextWaypoints.push(waypointName);
@@ -1499,25 +1802,29 @@ class AIAgent {
         this.updateContextWaypointsDisplay();
     }
 
-    // Test method for enhanced @ functionality
-    testEnhancedAtFunctionality() {
-        console.log('Testing enhanced @ functionality...');
-        
-        // Test adding context waypoints
-        this.addContextWaypoint('test-waypoint-1');
-        this.addContextWaypoint('test-waypoint-2');
-        
-        console.log('Added waypoints:', this.getSelectedContextWaypoints());
-        
-        // Test removing a waypoint
-        this.removeContextWaypoint('test-waypoint-1');
-        
-        console.log('After removal:', this.getSelectedContextWaypoints());
-        
-        // Clear all
-        this.clearSelectedContextWaypoints();
-        
-        console.log('After clear:', this.getSelectedContextWaypoints());
+    
+
+    
+
+    // Ensure drawing tools are properly connected
+    ensureDrawingToolsConnection() {
+        // Check if map controls manager exists and has drawing tools
+        if (window.mapControlsManager) {
+            // Try to reinitialize drawing tools if they don't exist
+            if (!window.mapControlsManager.drawingTools) {
+                const success = window.mapControlsManager.reinitializeDrawingTools();
+                if (success) {
+                    console.log('✅ Drawing tools connected to AI Agent');
+                    this.addAIMessage('🎨 Drawing tools are now ready! Click the drawing buttons to start creating waypoints.');
+                } else {
+                    console.warn('⚠️ Could not connect drawing tools to AI Agent');
+                }
+            } else {
+                console.log('✅ Drawing tools already connected');
+            }
+        } else {
+            console.warn('⚠️ Map controls manager not available');
+        }
     }
 
     // Mode selection methods
@@ -1673,65 +1980,19 @@ class AIAgent {
         // For example, if there's an ongoing API call, you could cancel it
     }
 
-    // Test method for debugging
-    testFunctionality() {
-        console.log('🧪 Testing AIAgent functionality...');
-        
-        // Test DOM elements
-        const chatInput = document.getElementById('chat-input');
-        const startButton = document.getElementById('start-button');
-        const modeDropdownBtn = document.getElementById('mode-dropdown-btn');
-        const modelDropdownBtn = document.getElementById('model-dropdown-btn');
-        
-        console.log('DOM Elements Status:', {
-            chatInput: !!chatInput,
-            startButton: !!startButton,
-            modeDropdownBtn: !!modeDropdownBtn,
-            modelDropdownBtn: !!modelDropdownBtn
-        });
-        
-        // Test input functionality
-        if (chatInput) {
-            console.log('Testing chat input...');
-            chatInput.value = 'Test message';
-            chatInput.dispatchEvent(new Event('input'));
-            console.log('Chat input value:', chatInput.value);
-        }
-        
-        // Test button functionality
-        if (startButton) {
-            console.log('Testing start button...');
-            console.log('Start button disabled:', startButton.disabled);
-            console.log('Start button opacity:', startButton.style.opacity);
-        }
-        
-        // Test dropdown functionality
-        if (modeDropdownBtn) {
-            console.log('Testing mode dropdown...');
-            modeDropdownBtn.click();
-        }
-        
-        if (modelDropdownBtn) {
-            console.log('Testing model dropdown...');
-            modelDropdownBtn.click();
-        }
-        
-        console.log('🧪 AIAgent test completed');
-    }
+    
 }
-
-
 
 // Export for global access
 window.AIAgent = AIAgent;
 
 // Global test function
-window.testAIAgent = function() {
-    if (window.aiAgentInstance) {
-        window.aiAgentInstance.testFunctionality();
-    } else {
-        console.error('❌ AIAgent instance not found. Try opening the AI Agent panel first.');
-    }
-};
+// (Removed test globals: testAIAgent, testEnhancedAt, testWaypointSuggestions)
 
-} // End of AIAgent class definition guard 
+// Global test function for waypoint API
+// (Removed test global: testWaypointAPI)
+// (Removed test global: testDirectAPI)
+
+// (Removed debug/test globals: fixDrawingTools, testDrawingTools, testNetworkConnectivity)
+
+} // End of AIAgent class definition guard

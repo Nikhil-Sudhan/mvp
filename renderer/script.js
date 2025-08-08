@@ -35,6 +35,9 @@ function init() {
                     setTimeout(() => {
                         if (window.AIAgent && !window.aiAgentInstance) {
                             window.aiAgentInstance = new window.AIAgent();
+                        } else if (window.aiAgentInstance) {
+                            // Ensure drawing tools are connected when AI panel is opened
+                            window.aiAgentInstance.ensureDrawingToolsConnection();
                         }
                     }, 500);
                 }
