@@ -1,0 +1,45 @@
+{
+  "mission": {
+    "name": "Dynamic Mission - 2025-08-12 19:47",
+    "location": "Dynamic Location",
+    "droneName": "Hovermax",
+    "homeBase": {
+      "longitude": 77.7243,
+      "latitude": 9.6212,
+      "altitude": 0,
+      "name": "HOME BASE",
+      "description": "Starting position"
+    },
+    "drone": {
+      "longitude": 77.7243,
+      "latitude": 9.6209,
+      "altitude": 30,
+      "name": "Dynamic Drone",
+      "description": "Current position after: [SURVEILLANCE] take off and move 30 meters backward"
+    },
+    "waypoints": [
+      {
+        "id": "waypoint_1",
+        "name": "Takeoff Point",
+        "longitude": 77.7243,
+        "latitude": 9.6212,
+        "altitude": 30,
+        "description": "Takeoff to 30m altitude"
+      },
+      {
+        "id": "waypoint_2",
+        "name": "Move Backward",
+        "longitude": 77.7243,
+        "latitude": 9.6209,
+        "altitude": 30,
+        "description": "Move 30m backward"
+      }
+    ],
+    "flightPath": {
+      "width": 4,
+      "color": "YELLOW",
+      "glowPower": 0.4
+    }
+  },
+  "lastUpdated": "2025-08-12T14:17:30.183Z"
+}

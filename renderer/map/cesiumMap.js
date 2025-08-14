@@ -61,6 +61,8 @@ async function setupCesiumMap() {
         // Enable fog for depth perception
         viewer.scene.fog.enabled = true;
         viewer.scene.fog.density = 0.0002;
+        // Improve depth precision against terrain to avoid visual drift
+        viewer.scene.globe.depthTestAgainstTerrain = true;
 
         // Set high-quality terrain from Cesium Ion
         try {

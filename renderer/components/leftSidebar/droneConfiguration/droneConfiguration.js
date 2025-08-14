@@ -1,18 +1,18 @@
 // Drone configuration constants
 const HOME_LOCATION = {
-    latitude: 9.581092224928884,  // San Francisco coordinates as example
-    longitude: 77.68423117301315,
+    latitude: 9.6212,  // San Francisco coordinates as example
+    longitude: 77.7243,
     altitude: 50 // meters above ground
 };
 
 const DRONE_MODELS = {
     'hovermax': {
-        ionAssetId: 3013232,
+        ionAssetId: 3336172,
         scale: 1.0,
         minimumPixelSize: 128
     },
     'phantom-x2': {
-        ionAssetId: 3013232, // Using same asset ID for example
+        ionAssetId: 3336172, // Same glTF asset for both entries
         scale: 0.8,
         minimumPixelSize: 128
     }
@@ -84,6 +84,32 @@ class DroneConfigurationManager {
         }
     }
 
+    // Very simple hardcoded positions: Hovermax at HOME, Phantom X2 ~50m east
+    getHardcodedPosition(droneType) {
+        const baseLat = HOME_LOCATION.latitude;
+        const baseLon = HOME_LOCATION.longitude;
+        const alt = 0; // use ground clamping for precise anchoring
+        
+        if (droneType === 'phantom-x2') {
+            // ~50 meters east at ~9.58° latitude (1° lon ≈ 109.7 km)
+            const lonOffset = 0.000456; // ~50m
+            return {
+                position: Cesium.Cartesian3.fromDegrees(baseLon + lonOffset, baseLat, alt),
+                lat: baseLat,
+                lon: baseLon + lonOffset,
+                alt,
+            };
+        }
+        
+        // Default: hovermax at home
+        return {
+            position: Cesium.Cartesian3.fromDegrees(baseLon, baseLat, alt),
+            lat: baseLat,
+            lon: baseLon,
+            alt,
+        };
+    }
+
     async addDroneToMap(droneType) {
         const modelConfig = DRONE_MODELS[droneType];
         if (!modelConfig) {
@@ -94,39 +120,44 @@ class DroneConfigurationManager {
             throw new Error("Cesium viewer not initialized");
         }
         
-        // Adding drone to map
-        
-        // Create Cesium position from home location
-        const position = Cesium.Cartesian3.fromDegrees(
-            HOME_LOCATION.longitude,
-            HOME_LOCATION.latitude,
-            HOME_LOCATION.altitude
-        );
+        // Hardcoded positions only
+        const { position, lat, lon, alt } = this.getHardcodedPosition(droneType);
 
         try {
-            // Loading 3D tileset
-            
-            // Load the 3D tileset
-            const tileset = await Cesium.Cesium3DTileset.fromIonAssetId(modelConfig.ionAssetId);
-            
-            // Configure the tileset
-            tileset.scale = modelConfig.scale;
-            tileset.minimumPixelSize = modelConfig.minimumPixelSize;
+            // Load Ion resource for glTF model entity
+            const resource = await Cesium.IonResource.fromAssetId(modelConfig.ionAssetId);
 
-            // Add to scene
-            window.viewer.scene.primitives.add(tileset);
-            // Added tileset to scene
+            // Add entity-based glTF model at the home location
+            const entity = window.viewer.entities.add({
+                name: `${droneType} drone`,
+                position: position,
+                model: {
+                    uri: resource,
+                    scale: modelConfig.scale,
+                    minimumPixelSize: 0,
+                    heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                }
+            });
 
-            // Position the model
-            tileset.modelMatrix = Cesium.Matrix4.fromTranslation(position);
+            // Add drone to the drone list manager
+            if (window.droneListManager) {
+                const droneData = {
+                    name: `${droneType}_${Date.now()}`,
+                    type: droneType,
+                    position: position,
+                    entity: entity,
+                    coordinates: {
+                        lat: lat,
+                        lon: lon,
+                        alt: alt
+                    }
+                };
+                window.droneListManager.addDrone(droneData);
+            }
 
             // Fly camera to the drone
             window.viewer.camera.flyTo({
-                destination: Cesium.Cartesian3.fromDegrees(
-                    HOME_LOCATION.longitude,
-                    HOME_LOCATION.latitude,
-                    HOME_LOCATION.altitude + 200 // Camera position 200m above drone
-                ),
+                destination: Cesium.Cartesian3.fromDegrees(lon, lat, 200),
                 orientation: {
                     heading: 0.0,
                     pitch: -Cesium.Math.PI_OVER_FOUR,
@@ -136,7 +167,7 @@ class DroneConfigurationManager {
             });
             
             // Successfully added drone to map
-            return tileset;
+            return entity;
 
         } catch (error) {
             console.error('Error loading drone model:', error);

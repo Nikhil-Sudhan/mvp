@@ -45,13 +45,15 @@ class DroneCommandAPI {
      * Send a command with waypoint data to the API
      * @param {string} command - The command to execute
      * @param {Array} waypoints - Array of waypoint objects
+     * @param {string} droneName - Optional drone name for context
      * @returns {Promise<Object>} - API response
      */
-    async sendCommandWithWaypoints(command, waypoints) {
+    async sendCommandWithWaypoints(command, waypoints, droneName = null) {
         try {
             console.log('📡 Sending command with waypoints:', {
                 command: command,
                 waypoints: waypoints,
+                droneName: droneName,
                 url: `${this.baseURL}${this.waypointEndpoint}`
             });
 
@@ -59,6 +61,11 @@ class DroneCommandAPI {
                 command: command,
                 waypoints: waypoints
             };
+
+            // Add drone_name if provided
+            if (droneName) {
+                requestBody.drone_name = droneName;
+            }
 
             console.log('📤 Request body:', JSON.stringify(requestBody, null, 2));
 
@@ -100,6 +107,8 @@ class DroneCommandAPI {
             };
         }
     }
+
+
 }
 
 // Export for use in other modules

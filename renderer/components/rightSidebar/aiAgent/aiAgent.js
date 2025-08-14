@@ -5,24 +5,18 @@ class AIAgent {
     constructor() {
         this.droneCommandAPI = null;
         this.waypointStorage = null;
-        this.waypoints = [];
-        this.currentPolygon = null;
-        this.selectedWaypoints = [];
         this.selectedMode = 'surveillance'; // Default mode
         this.selectedModel = 'auto'; // Default model
-        this.saveInProgress = false; // Prevent duplicate saves
         
         // New properties for enhanced @ functionality
         this.selectedContextWaypoints = []; // List of waypoint names selected via @
+        this.selectedContextDrones = []; // List of drone names selected via @
         this.contextWaypointsContainer = null; // Reference to the context display area
         
         // Properties for waypoint suggestions dropdown
         this.waypointSuggestionsVisible = false;
         this.currentSuggestionsInput = null;
         this.currentSuggestionIndex = -1; // For keyboard navigation
-        
-        // Waypoint synchronization manager
-        this.syncManager = null;
         
         // Force immediate setup with multiple retries
         this.initWithRetries();
@@ -54,16 +48,18 @@ class AIAgent {
 
     async init() {
         try {
-            // Initialize API and storage
-            this.droneCommandAPI = new DroneCommandAPI();
+            // Initialize storage
             this.waypointStorage = new WaypointStorage();
             
-            // Load existing waypoints
-            this.waypoints = await this.waypointStorage.loadWaypoints();
-            console.log(`Loaded ${this.waypoints.length} waypoints from storage`);
+            // Load existing waypoints into storage
+            const waypoints = await this.waypointStorage.loadWaypoints();
+            console.log(`Loaded ${waypoints.length} waypoints from storage`);
+            
+            // Set waypoints in storage
+            this.waypointStorage.setWaypoints(waypoints);
             
             // Sync with individual JSON files to ensure consistency
-            await this.syncWithIndividualFiles();
+            await this.waypointStorage.syncWithIndividualFiles();
             
             // Wait for DOM to be ready
             await this.waitForDOM();
@@ -71,14 +67,11 @@ class AIAgent {
             // Set up event listeners
             this.setupEventListeners();
             
-                    // Initialize simple waypoint synchronization
-        this.syncManager = new SimpleWaypointSync(this);
-            
             // Update waypoints list immediately
             this.updateWaypointsList();
             
             // Restore waypoints to the map
-            await this.restoreWaypointsToMap();
+            await this.waypointStorage.restoreWaypointsToMap();
             
             // Initialize default selections
             this.selectMode('surveillance');
@@ -90,8 +83,11 @@ class AIAgent {
             // Initialize context waypoints display
             this.initializeContextWaypointsDisplay();
             
-            // Ensure drawing tools are connected
-            this.ensureDrawingToolsConnection();
+            // Initialize API Mission Renderer
+            if (!window.apiMissionRenderer) {
+                window.apiMissionRenderer = new ApiMissionRenderer();
+            }
+            window.apiMissionRenderer.setAIAgent(this);
             
             console.log('✅ AIAgent initialization completed');
             
@@ -290,38 +286,13 @@ class AIAgent {
             }
         });
 
-        // Waypoint modal events
-        const saveWaypointBtn = document.getElementById('save-waypoint');
-        const cancelWaypointBtn = document.getElementById('cancel-waypoint');
-        const waypointInput = document.getElementById('waypoint-input');
 
-        if (saveWaypointBtn) {
-            saveWaypointBtn.addEventListener('click', () => {
-                this.saveCurrentWaypoint();
-            });
-        }
-
-        if (cancelWaypointBtn) {
-            cancelWaypointBtn.addEventListener('click', () => {
-                this.hideWaypointModal();
-            });
-        }
-
-        if (waypointInput) {
-            waypointInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    this.saveCurrentWaypoint();
-                } else if (e.key === 'Escape') {
-                    this.hideWaypointModal();
-                }
-            });
-        }
 
         // Save waypoints when app closes
         window.addEventListener('beforeunload', async (e) => {
-            if (this.waypointStorage && this.waypoints.length > 0) {
+            if (this.waypointStorage) {
                 try {
-                    await this.waypointStorage.saveWaypoints(this.waypoints);
+                    await this.waypointStorage.saveWaypoints(this.waypointStorage.getWaypoints());
                     console.log('Waypoints saved before app close');
                 } catch (error) {
                     console.error('Failed to save waypoints before app close:', error);
@@ -335,7 +306,10 @@ class AIAgent {
                 const suggestionsDropdown = document.getElementById('waypoint-suggestions-dropdown');
                 if (suggestionsDropdown && !suggestionsDropdown.contains(e.target) && 
                     this.currentSuggestionsInput && !this.currentSuggestionsInput.contains(e.target)) {
-                    this.hideWaypointSuggestions();
+                    // Add small delay to allow item click handlers to execute first
+                    setTimeout(() => {
+                        this.hideWaypointSuggestions();
+                    }, 100);
                 }
             }
         });
@@ -373,32 +347,18 @@ class AIAgent {
         // Clear input
         input.value = '';
         
-        // Get selected context waypoints
+        // Get selected context waypoints and drones
         const contextWaypoints = this.getSelectedContextWaypoints();
+        const contextDrones = this.getSelectedContextDrones();
         console.log('📍 Context waypoints:', contextWaypoints);
+        console.log('🚁 Context drones:', contextDrones);
         
-        // Extract waypoint data for selected waypoints
-        const waypointData = this.getWaypointDataForContext(contextWaypoints);
-        console.log('🗺️ Waypoint data for API:', waypointData);
-        
-        // Prepare command with mode and model context
-        let command = message;
-        if (this.selectedMode) {
-            command = `[${this.selectedMode.toUpperCase()}] ${command}`;
-        }
-        if (this.selectedModel && this.selectedModel !== 'auto') {
-            command = `[${this.selectedModel.toUpperCase()}] ${command}`;
-        }
-        
-        console.log('📡 Final command:', command);
-        
-        // Send to appropriate API endpoint
-        if (waypointData.length > 0) {
-            // Use the new endpoint with waypoint data
-            await this.sendToAPIWithWaypoints(command, waypointData);
+        // Send message using API Mission Renderer
+        if (window.apiMissionRenderer) {
+            await window.apiMissionRenderer.sendMessage(message, contextWaypoints, contextDrones);
         } else {
-            // Use the regular endpoint
-            await this.sendToAPI(command);
+            console.error('❌ API Mission Renderer not available');
+            this.addAIMessage('❌ API Mission Renderer not available');
         }
         
         // Switch back to start button
@@ -465,87 +425,14 @@ class AIAgent {
         });
     }
 
-    async sendToAPI(command) {
-        if (!this.droneCommandAPI) {
-            this.addAIMessage('API not available');
-            return;
-        }
 
-        try {
-            const result = await this.droneCommandAPI.sendCommand(command);
-            
-            if (result.success) {
-                this.addAIMessage(`✅ Command sent: "${command}"`);
-                if (result.data) {
-                    this.addAIMessage(`Response: ${JSON.stringify(result.data)}`);
-                }
-            } else {
-                this.addAIMessage(`❌ Error: ${result.error}`);
-            }
-        } catch (error) {
-            this.addAIMessage(`❌ Error: ${error.message}`);
-        }
-    }
 
-    async sendToAPIWithWaypoints(command, waypointData) {
-        if (!this.droneCommandAPI) {
-            this.addAIMessage('API not available');
-            return;
-        }
 
-        try {
-            const result = await this.droneCommandAPI.sendCommandWithWaypoints(command, waypointData);
-            
-            if (result.success) {
-                this.addAIMessage(`✅ Command with waypoints sent: "${command}"`);
-                this.addAIMessage(`📍 Waypoints included: ${waypointData.length} waypoint(s)`);
-                if (result.data) {
-                    this.addAIMessage(`Response: ${JSON.stringify(result.data)}`);
-                    try {
-                        // Render mission response on Cesium map
-                        if (!window.apiMissionRenderer) {
-                            window.apiMissionRenderer = new ApiMissionRenderer();
-                        }
-                        window.apiMissionRenderer.renderFromApiResponse(result.data, { clearPrevious: true, flyTo: true });
-                        this.addAIMessage('🗺️ Rendered mission on map');
-                    } catch (e) {
-                        console.error('Failed to render mission on map:', e);
-                        this.addAIMessage('⚠️ Could not render mission on map');
-                    }
-                }
-            } else {
-                this.addAIMessage(`❌ Error: ${result.error}`);
-            }
-        } catch (error) {
-            this.addAIMessage(`❌ Error: ${error.message}`);
-        }
-    }
+
+
 
     getWaypointDataForContext(contextWaypointNames) {
-        const waypointData = [];
-        
-        contextWaypointNames.forEach(waypointName => {
-            // Find the waypoint in our loaded waypoints
-            const waypoint = this.waypoints.find(w => w.name === waypointName);
-            if (waypoint) {
-                // Extract the waypoint data for the API
-                const apiWaypointData = {
-                    id: waypoint.id,
-                    name: waypoint.name,
-                    type: waypoint.type,
-                    coordinates: waypoint.coordinates,
-                    description: waypoint.description,
-                    tags: waypoint.tags,
-                    metadata: waypoint.metadata
-                };
-                waypointData.push(apiWaypointData);
-                console.log(`✅ Found waypoint data for "${waypointName}":`, apiWaypointData);
-            } else {
-                console.warn(`⚠️ Waypoint "${waypointName}" not found in loaded waypoints`);
-            }
-        });
-        
-        return waypointData;
+        return window.getWaypointDataForContext(contextWaypointNames);
     }
 
     addUserMessage(text) {
@@ -593,210 +480,16 @@ class AIAgent {
         return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    // Waypoint management methods
-    showWaypointModal() {
-        const modal = document.getElementById('waypoint-modal');
-        const input = document.getElementById('waypoint-input');
-        
-        if (modal && input) {
-            modal.style.display = 'flex';
-            input.value = '';
-            input.focus();
-        }
-    }
 
-    hideWaypointModal() {
-        const modal = document.getElementById('waypoint-modal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-        this.currentPolygon = null;
-    }
-
-    async saveCurrentWaypointAuto() {
-        console.log('saveCurrentWaypointAuto called');
-        if (!this.currentPolygon) {
-            console.log('No current polygon found');
-            return;
-        }
-
-        // Prevent duplicate saves
-        if (this.currentPolygon.saved || this.saveInProgress) {
-            console.log('Waypoint already saved or save in progress, skipping duplicate save');
-            return;
-        }
-
-        try {
-            // Mark as being saved to prevent duplicates
-            this.currentPolygon.saved = true;
-            this.saveInProgress = true;
-            console.log('Creating waypoint...');
-            // Generate default name
-            const waypointCount = this.waypoints.length + 1;
-            const defaultName = `Waypoint#${waypointCount}`;
-            
-            // Find a unique name if default already exists
-            let finalName = defaultName;
-            let counter = 1;
-            while (this.waypoints.find(w => w.name === finalName)) {
-                finalName = `Waypoint#${waypointCount + counter}`;
-                counter++;
-            }
-
-            console.log(`Generated name: ${finalName}`);
-
-            // Convert positions to lat/lon coordinates
-            const coordinates = this.currentPolygon.positions.map(pos => {
-                const cartographic = Cesium.Cartographic.fromCartesian(pos);
-                return {
-                    lat: Cesium.Math.toDegrees(cartographic.latitude),
-                    lon: Cesium.Math.toDegrees(cartographic.longitude),
-                    alt: cartographic.height || 100 // Default altitude
-                };
-            });
-
-            console.log(`Converted ${coordinates.length} coordinates`);
-
-            // Generate unique ID with entity ID to prevent duplicates
-            const uniqueId = `${Date.now()}_${this.currentPolygon.entity.id}`;
-            
-            // Check if waypoint with this entity ID already exists
-            const existingWaypoint = this.waypoints.find(w => w.entityId === this.currentPolygon.entity.id);
-            if (existingWaypoint) {
-                console.log('Waypoint with this entity already exists, skipping duplicate creation');
-                return;
-            }
-
-            // Create waypoint object
-            const waypoint = {
-                id: uniqueId,
-                name: finalName,
-                type: this.currentPolygon.type,
-                coordinates: coordinates,
-                created: new Date().toISOString(),
-                entityId: this.currentPolygon.entity.id,
-                description: `${this.currentPolygon.type} waypoint created via drawing tools`,
-                tags: [this.currentPolygon.type, 'waypoint', 'drawn'],
-                metadata: {
-                    pointCount: coordinates.length,
-                    area: this.calculateArea(coordinates),
-                    perimeter: this.calculatePerimeter(coordinates)
-                }
-            };
-
-            console.log('Created waypoint object:', waypoint);
-
-            // Add to waypoints array
-            this.waypoints.push(waypoint);
-            console.log(`Total waypoints: ${this.waypoints.length}`);
-            
-            // Emit waypoint created event for synchronization (disabled for now)
-            // this.emitWaypointEvent('waypointCreated', waypoint);
-            
-            // Save to storage (collective waypoints file)
-            await this.waypointStorage.saveWaypoints(this.waypoints);
-            console.log('Saved to storage');
-            
-            // Save individual waypoint JSON file
-            await this.saveIndividualWaypointFile(waypoint);
-            console.log('Saved individual waypoint file');
-            
-            // Update UI
-            console.log('Updating waypoints list...');
-            this.updateWaypointsList();
-            
-            // Update track mission waypoints with all waypoints
-            this.updateTrackMissionWithAllWaypoints();
-            
-            // Add success message
-            this.addAIMessage(`✅ Waypoint "${finalName}" created automatically! Double-click the name to rename it.`);
-            
-            // Clear current polygon
-            this.currentPolygon = null;
-            
-            console.log('Waypoint creation completed successfully');
-            
-        } catch (error) {
-            console.error('Failed to save waypoint:', error);
-            this.addAIMessage(`❌ Failed to save waypoint: ${error.message}`);
-        } finally {
-            // Reset save flag
-            this.saveInProgress = false;
-        }
-    }
-
-    async saveCurrentWaypoint() {
-        const input = document.getElementById('waypoint-input');
-        if (!input || !this.currentPolygon) return;
-
-        const name = input.value.trim();
-        if (!name) {
-            this.addAIMessage('Please enter a name for the waypoint.');
-            return;
-        }
-
-        // Check if name already exists
-        const existingWaypoint = this.waypoints.find(w => w.name === name);
-        if (existingWaypoint) {
-            this.addAIMessage(`A waypoint named "${name}" already exists. Please choose a different name.`);
-            return;
-        }
-
-        try {
-            // Convert positions to lat/lon coordinates
-            const coordinates = this.currentPolygon.positions.map(pos => {
-                const cartographic = Cesium.Cartographic.fromCartesian(pos);
-                return {
-                    lat: Cesium.Math.toDegrees(cartographic.latitude),
-                    lon: Cesium.Math.toDegrees(cartographic.longitude),
-                    alt: cartographic.height || 100 // Default altitude
-                };
-            });
-
-            // Create waypoint object
-            const waypoint = {
-                id: Date.now().toString(),
-                name: name,
-                type: this.currentPolygon.type,
-                coordinates: coordinates,
-                created: new Date().toISOString(),
-                entityId: this.currentPolygon.entity.id,
-                description: `${this.currentPolygon.type} waypoint created via drawing tools`,
-                tags: [this.currentPolygon.type, 'waypoint', 'drawn'],
-                metadata: {
-                    pointCount: coordinates.length,
-                    area: this.calculateArea(coordinates),
-                    perimeter: this.calculatePerimeter(coordinates)
-                }
-            };
-
-            // Add to waypoints array
-            this.waypoints.push(waypoint);
-            
-            // Save to storage
-            await this.waypointStorage.saveWaypoints(this.waypoints);
-            
-            // Individual file save is handled by saveCurrentWaypointAuto only
-            // Removed duplicate call to prevent double file creation
-            
-            // Update UI
-            this.updateWaypointsList();
-            
-            // Hide modal
-            this.hideWaypointModal();
-            
-            // Add success message
-            this.addAIMessage(`✅ Waypoint "${name}" saved successfully!`);
-            
-        } catch (error) {
-            console.error('Failed to save waypoint:', error);
-            this.addAIMessage(`❌ Failed to save waypoint: ${error.message}`);
-        }
-    }
 
     updateWaypointsList() {
         console.log('updateWaypointsList called');
-        console.log(`Current waypoints: ${this.waypoints.length}`);
+        
+        // Get waypoints from storage
+        const waypoints = this.waypointStorage.getWaypoints();
+        const selectedWaypoints = this.waypointStorage.getSelectedWaypoints();
+        
+        console.log(`Current waypoints: ${waypoints.length}`);
         
         const waypointsTableBody = document.getElementById('waypoints-table-body');
         const waypointsTable = document.getElementById('waypoints-table');
@@ -819,19 +512,19 @@ class AIAgent {
         // Always show table for debugging
         waypointsTable.style.display = 'table';
         
-        if (this.waypoints.length === 0) {
+        if (waypoints.length === 0) {
             console.log('No waypoints to display, showing empty state');
             emptyState.style.display = 'block';
             return;
         }
 
-        console.log(`Displaying ${this.waypoints.length} waypoints`);
+        console.log(`Displaying ${waypoints.length} waypoints`);
         emptyState.style.display = 'none';
 
         // Add waypoints to the table
-        this.waypoints.forEach((waypoint, index) => {
+        waypoints.forEach((waypoint, index) => {
             console.log(`Adding waypoint ${index + 1}:`, waypoint.name);
-            const isSelected = this.selectedWaypoints.includes(waypoint.id);
+            const isSelected = selectedWaypoints.includes(waypoint.id);
             
             const row = document.createElement('tr');
             row.dataset.waypointId = waypoint.id;
@@ -971,14 +664,8 @@ class AIAgent {
     }
 
     async updateWaypointName(waypointId, newName) {
-        const waypoint = this.waypoints.find(w => w.id === waypointId);
-        if (waypoint) {
-            const oldName = waypoint.name;
-            waypoint.name = newName;
-            console.log(`Updated waypoint ${waypointId} name from "${oldName}" to: "${newName}"`);
-            
-            // Emit waypoint updated event for synchronization (disabled for now)
-            // this.emitWaypointEvent('waypointUpdated', waypoint);
+        try {
+            const waypoint = await this.waypointStorage.updateWaypointName(waypointId, newName);
             
             // Update the display
             const nameElement = document.querySelector(`.waypoint-name[data-waypoint-id="${waypointId}"]`);
@@ -986,28 +673,18 @@ class AIAgent {
                 nameElement.textContent = newName;
             }
             
-            // Save to storage
-            await this.waypointStorage.saveWaypoints(this.waypoints);
-            
-            // Update individual waypoint file
-            await this.updateIndividualWaypointFile(waypoint, oldName);
-            
             // Update track mission waypoints
             this.updateTrackMissionWithAllWaypoints();
             
-            if (this.aiAgent) {
-                this.addAIMessage(`✅ Waypoint renamed from "${oldName}" to "${newName}"`);
-            }
+            this.addAIMessage(`✅ Waypoint renamed from "${waypoint.name}" to "${newName}"`);
+        } catch (error) {
+            console.error('Failed to update waypoint name:', error);
+            this.addAIMessage(`❌ Failed to update waypoint name: ${error.message}`);
         }
     }
 
     toggleWaypointSelection(waypointId) {
-        const index = this.selectedWaypoints.indexOf(waypointId);
-        if (index > -1) {
-            this.selectedWaypoints.splice(index, 1);
-        } else {
-            this.selectedWaypoints.push(waypointId);
-        }
+        this.waypointStorage.toggleWaypointSelection(waypointId);
         
         // Update UI to show selection
         this.updateWaypointsList();
@@ -1022,24 +699,9 @@ class AIAgent {
         }
 
         try {
-            // Find the waypoint before removing it
-            const waypoint = this.waypoints.find(w => w.id === waypointId);
-            const waypointName = waypoint ? waypoint.name : 'Unknown';
+            const waypointName = await this.waypointStorage.deleteWaypoint(waypointId);
             
-            // Emit waypoint deleted event for synchronization (disabled for now)
-            // this.emitWaypointEvent('waypointDeleted', waypoint);
-            
-            // Remove from array
-            this.waypoints = this.waypoints.filter(w => w.id !== waypointId);
-            
-            // Remove from selected
-            this.selectedWaypoints = this.selectedWaypoints.filter(id => id !== waypointId);
-            
-            // Save to storage
-            await this.waypointStorage.saveWaypoints(this.waypoints);
-            
-            // Delete individual waypoint file
-            await this.deleteIndividualWaypointFile(waypointName);
+
             
             // Update UI
             this.updateWaypointsList();
@@ -1055,234 +717,23 @@ class AIAgent {
         }
     }
 
-    // Emit waypoint events for synchronization (disabled for now)
-    emitWaypointEvent(eventType, waypointData) {
-        // Disabled to prevent crashes
-        console.log(`📡 Event emission disabled: ${eventType}`);
-    }
+
 
     // Restore waypoints to the map when app loads
     async restoreWaypointsToMap() {
-        try {
-            // Wait for Cesium viewer to be available
-            if (!window.viewer && !window.cesiumViewer) {
-                console.log('Cesium viewer not available yet, retrying in 1 second...');
-                setTimeout(() => this.restoreWaypointsToMap(), 1000);
-                return;
-            }
-
-            const viewer = window.viewer || window.cesiumViewer;
-            if (!viewer) {
-                console.warn('Cesium viewer not found, cannot restore waypoints to map');
-                return;
-            }
-
-            console.log(`Restoring ${this.waypoints.length} waypoints to map`);
-            
-            for (const waypoint of this.waypoints) {
-                try {
-                    // Convert coordinates back to Cartesian3
-                    const positions = waypoint.coordinates.map(coord => 
-                        Cesium.Cartesian3.fromDegrees(coord.lon, coord.lat, coord.alt || 100)
-                    );
-
-                    // Create entity based on waypoint type
-                    let entity;
-                    if (waypoint.type === 'circle') {
-                        entity = viewer.entities.add({
-                            id: waypoint.entityId,
-                            polygon: {
-                                hierarchy: new Cesium.PolygonHierarchy(positions),
-                                material: Cesium.Color.CYAN.withAlpha(0.3),
-                                outline: true,
-                                outlineColor: Cesium.Color.CYAN,
-                                outlineWidth: 2,
-                                height: 0,
-                                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-                                extrudedHeight: 0
-                            }
-                        });
-                    } else {
-                        // Default polygon rendering for squares and polygons
-                        entity = viewer.entities.add({
-                            id: waypoint.entityId,
-                            polygon: {
-                                hierarchy: new Cesium.PolygonHierarchy(positions),
-                                material: Cesium.Color.CYAN.withAlpha(0.3),
-                                outline: true,
-                                outlineColor: Cesium.Color.CYAN,
-                                outlineWidth: 2,
-                                height: 0,
-                                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-                                extrudedHeight: 0
-                            }
-                        });
-                    }
-
-                    console.log(`Restored waypoint "${waypoint.name}" to map`);
-                } catch (error) {
-                    console.error(`Failed to restore waypoint "${waypoint.name}" to map:`, error);
-                }
-            }
-
-            // Update waypoints list after restoring to map
-            this.updateWaypointsList();
-
-            if (this.waypoints.length > 0) {
-                this.addAIMessage(`✅ Restored ${this.waypoints.length} waypoints to the map and table`);
-            }
-        } catch (error) {
-            console.error('Failed to restore waypoints to map:', error);
-        }
+        await this.waypointStorage.restoreWaypointsToMap();
+        this.updateWaypointsList();
     }
 
-    // Update individual waypoint file when name changes
-    async updateIndividualWaypointFile(waypoint, oldName) {
-        try {
-            // Check if file system is available
-            if (!this.waypointStorage || !this.waypointStorage.useFileSystem) {
-                console.log('File system not available, skipping individual waypoint file update');
-                return;
-            }
 
-            // Delete old file if name changed
-            if (oldName && oldName !== waypoint.name) {
-                const oldFileName = `${oldName.replace(/[<>:"/\\|?*]/g, '_')}.json`;
-                const oldFilePath = require('path').join(process.cwd(), 'waypoints', oldFileName);
-                
-                try {
-                    if (require('fs').existsSync(oldFilePath)) {
-                        require('fs').unlinkSync(oldFilePath);
-                        console.log(`Deleted old waypoint file: ${oldFilePath}`);
-                    }
-                } catch (error) {
-                    console.warn('Failed to delete old waypoint file:', error);
-                }
-            }
 
-            // Create new file with updated name
-            const sanitizedName = waypoint.name.replace(/[<>:"/\\|?*]/g, '_');
-            const fileName = `${sanitizedName}.json`;
-            const filePath = require('path').join(process.cwd(), 'waypoints', fileName);
-            
-            // Create waypoint data for individual file
-            const waypointData = {
-                version: '1.0',
-                created: waypoint.created,
-                waypoint: waypoint,
-                metadata: {
-                    savedAt: new Date().toISOString(),
-                    source: 'Sky Loom Drawing Tools',
-                    format: 'individual',
-                    lastModified: new Date().toISOString()
-                }
-            };
 
-            // Write the updated file
-            require('fs').writeFileSync(filePath, JSON.stringify(waypointData, null, 2), 'utf8');
-            console.log(`Updated individual waypoint file: ${filePath}`);
-            
-        } catch (error) {
-            console.error('Failed to update individual waypoint file:', error);
-            // Don't throw error to avoid breaking the main waypoint saving process
-        }
-    }
 
-    // Delete individual waypoint file
-    async deleteIndividualWaypointFile(waypointName) {
-        try {
-            // Check if file system is available
-            if (!this.waypointStorage || !this.waypointStorage.useFileSystem) {
-                console.log('File system not available, skipping individual waypoint file deletion');
-                return;
-            }
 
-            // Sanitize filename
-            const sanitizedName = waypointName.replace(/[<>:"/\\|?*]/g, '_');
-            const fileName = `${sanitizedName}.json`;
-            const filePath = require('path').join(process.cwd(), 'waypoints', fileName);
-            
-            // Delete the file
-            if (require('fs').existsSync(filePath)) {
-                require('fs').unlinkSync(filePath);
-                console.log(`Deleted individual waypoint file: ${filePath}`);
-            } else {
-                console.warn(`Waypoint file not found for deletion: ${filePath}`);
-            }
-            
-        } catch (error) {
-            console.error('Failed to delete individual waypoint file:', error);
-            // Don't throw error to avoid breaking the main waypoint deletion process
-        }
-    }
-
-    // Sync waypoints with individual JSON files to ensure consistency
-    async syncWithIndividualFiles() {
-        try {
-            // Check if file system is available
-            if (!this.waypointStorage || !this.waypointStorage.useFileSystem) {
-                console.log('File system not available, skipping individual file sync');
-                return;
-            }
-
-            const fs = require('fs');
-            const path = require('path');
-            const waypointsDir = path.join(process.cwd(), 'waypoints');
-            
-            // Check if waypoints directory exists
-            if (!fs.existsSync(waypointsDir)) {
-                console.log('Waypoints directory not found, skipping sync');
-                return;
-            }
-
-            // Read all JSON files in waypoints directory
-            const files = fs.readdirSync(waypointsDir).filter(file => file.endsWith('.json'));
-            console.log(`Found ${files.length} individual waypoint files`);
-
-            // Check for orphaned files (files that don't correspond to loaded waypoints)
-            const loadedWaypointNames = this.waypoints.map(w => w.name);
-            let orphanedFiles = [];
-
-            for (const file of files) {
-                const waypointName = file.replace('.json', '');
-                if (!loadedWaypointNames.includes(waypointName)) {
-                    orphanedFiles.push(file);
-                }
-            }
-
-            // Remove orphaned files
-            for (const orphanedFile of orphanedFiles) {
-                const filePath = path.join(waypointsDir, orphanedFile);
-                try {
-                    fs.unlinkSync(filePath);
-                    console.log(`Removed orphaned waypoint file: ${orphanedFile}`);
-                } catch (error) {
-                    console.warn(`Failed to remove orphaned file ${orphanedFile}:`, error);
-                }
-            }
-
-            if (orphanedFiles.length > 0) {
-                console.log(`Cleaned up ${orphanedFiles.length} orphaned waypoint files`);
-            }
-
-        } catch (error) {
-            console.error('Failed to sync with individual files:', error);
-        }
-    }
 
     updateTrackMissionWithAllWaypoints() {
-        // Convert all waypoints to track mission format
-        const trackMissionWaypoints = this.waypoints.flatMap(waypoint => 
-            waypoint.coordinates.map((coord, index) => ({
-                id: `${waypoint.id}_${index}`,
-                name: `${waypoint.name}_${index + 1}`,
-                latitude: coord.lat,
-                longitude: coord.lon,
-                altitude: coord.alt,
-                description: `Point ${index + 1} of ${waypoint.name}`
-            }))
-        );
-
+        const trackMissionWaypoints = this.waypointStorage.convertToTrackMissionFormat();
+        
         // Update track mission waypoints list
         const trackMissionInstance = TrackMission.getInstance();
         if (trackMissionInstance) {
@@ -1291,23 +742,8 @@ class AIAgent {
     }
 
     updateTrackMissionWaypoints() {
-        // Get selected waypoints
-        const selectedWaypoints = this.waypoints.filter(w => 
-            this.selectedWaypoints.includes(w.id)
-        );
-
-        // Convert to track mission format
-        const trackMissionWaypoints = selectedWaypoints.flatMap(waypoint => 
-            waypoint.coordinates.map((coord, index) => ({
-                id: `${waypoint.id}_${index}`,
-                name: `${waypoint.name}_${index + 1}`,
-                latitude: coord.lat,
-                longitude: coord.lon,
-                altitude: coord.alt,
-                description: `Point ${index + 1} of ${waypoint.name}`
-            }))
-        );
-
+        const trackMissionWaypoints = this.waypointStorage.convertSelectedToTrackMissionFormat();
+        
         // Update track mission waypoints list
         const trackMissionInstance = TrackMission.getInstance();
         if (trackMissionInstance) {
@@ -1315,127 +751,22 @@ class AIAgent {
         }
     }
 
-    // Utility methods
-    calculateArea(coordinates) {
-        // Simple area calculation (approximate)
-        if (coordinates.length < 3) return 0;
-        
-        let area = 0;
-        for (let i = 0; i < coordinates.length; i++) {
-            const j = (i + 1) % coordinates.length;
-            area += coordinates[i].lon * coordinates[j].lat;
-            area -= coordinates[j].lon * coordinates[i].lat;
-        }
-        return Math.abs(area) / 2;
-    }
+    // Utility methods moved to DrawingTools (calculateArea, calculatePerimeter)
 
-    calculatePerimeter(coordinates) {
-        if (coordinates.length < 2) return 0;
-        
-        let perimeter = 0;
-        for (let i = 0; i < coordinates.length; i++) {
-            const j = (i + 1) % coordinates.length;
-            const dx = coordinates[j].lon - coordinates[i].lon;
-            const dy = coordinates[j].lat - coordinates[i].lat;
-            perimeter += Math.sqrt(dx * dx + dy * dy);
-        }
-        return perimeter;
-    }
 
-    // Save individual waypoint JSON file to waypoints folder
-    async saveIndividualWaypointFile(waypoint) {
-        try {
-            // Check if file system is available
-            if (!this.waypointStorage || !this.waypointStorage.useFileSystem) {
-                console.log('File system not available, skipping individual waypoint file save');
-                return;
-            }
-
-            // Sanitize filename (remove invalid characters)
-            const sanitizedName = waypoint.name.replace(/[<>:"/\\|?*]/g, '_');
-            const fileName = `${sanitizedName}.json`;
-            const filePath = require('path').join(process.cwd(), 'waypoints', fileName);
-            
-            // Removed file existence check since we fixed the duplicate calling issue
-            
-            // Create waypoint data for individual file
-            const waypointData = {
-                version: '1.0',
-                created: waypoint.created,
-                waypoint: waypoint,
-                metadata: {
-                    savedAt: new Date().toISOString(),
-                    source: 'Sky Loom Drawing Tools',
-                    format: 'individual'
-                }
-            };
-
-            // Write the file
-            require('fs').writeFileSync(filePath, JSON.stringify(waypointData, null, 2), 'utf8');
-            console.log(`Individual waypoint file saved: ${filePath}`);
-            
-        } catch (error) {
-            console.error('Failed to save individual waypoint file:', error);
-            // Don't throw error to avoid breaking the main waypoint saving process
-        }
-    }
 
     // API methods for sending waypoints to backend
     async sendWaypointsToBackend(missionName) {
-        if (this.selectedWaypoints.length === 0) {
-            throw new Error('No waypoints selected');
-        }
-
-        const selectedWaypoints = this.waypoints.filter(w => 
-            this.selectedWaypoints.includes(w.id)
-        );
-
-        // Convert to backend format
-        const waypointsData = selectedWaypoints.flatMap(waypoint => 
-            waypoint.coordinates.map(coord => ({
-                lat: coord.lat,
-                lon: coord.lon,
-                alt: coord.alt
-            }))
-        );
-
-        // Get context waypoints
-        const contextWaypoints = this.getSelectedContextWaypoints();
-
-        const payload = {
-            "waypoints name": missionName,
-            "waypoints": waypointsData,
-            "context_waypoints": contextWaypoints // Include context waypoints
-        };
-
-        try {
-            const response = await fetch('http://localhost:8000/waypoints', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            return result;
-        } catch (error) {
-            console.error('Failed to send waypoints to backend:', error);
-            throw error;
-        }
+        return await this.waypointStorage.sendWaypointsToBackend(missionName);
     }
 
     // Public methods for external access
     getSelectedWaypoints() {
-        return this.waypoints.filter(w => this.selectedWaypoints.includes(w.id));
+        return this.waypointStorage.getSelectedWaypointObjects();
     }
 
     clearSelectedWaypoints() {
-        this.selectedWaypoints = [];
+        this.waypointStorage.clearSelectedWaypoints();
         this.updateWaypointsList();
         this.updateTrackMissionWaypoints();
     }
@@ -1483,12 +814,13 @@ class AIAgent {
 
         waypointsContext.innerHTML = '';
 
-        if (this.waypoints.length === 0) {
+        const availableWaypoints = this.waypointStorage.getWaypoints();
+        if (availableWaypoints.length === 0) {
             waypointsContext.innerHTML = '<div class="context-item empty">No waypoints available</div>';
             return;
         }
 
-        this.waypoints.forEach(waypoint => {
+        availableWaypoints.forEach(waypoint => {
             const item = document.createElement('div');
             item.className = 'context-item';
             item.innerHTML = `
@@ -1508,8 +840,27 @@ class AIAgent {
 
         dronesContext.innerHTML = '';
 
-        // For now, we'll show a placeholder. You can populate this with actual drone data later
-        dronesContext.innerHTML = '<div class="context-item empty">No drones available</div>';
+        // Get drones from drone list manager
+        const availableDrones = window.droneListManager ? window.droneListManager.getDronesForDisplay() : [];
+
+        if (availableDrones.length === 0) {
+            dronesContext.innerHTML = '<div class="context-item empty">No drones available</div>';
+            return;
+        }
+
+        availableDrones.forEach(drone => {
+            const item = document.createElement('div');
+            item.className = 'context-item';
+            item.innerHTML = `
+                <i class="fas fa-drone"></i>
+                <span>${drone.name}</span>
+                <small class="drone-type">${drone.type}</small>
+            `;
+            item.addEventListener('click', () => {
+                this.insertDroneContext(drone.name);
+            });
+            dronesContext.appendChild(item);
+        });
     }
 
     insertWaypointContext(waypointName) {
@@ -1526,6 +877,22 @@ class AIAgent {
         
         // Add to selected context waypoints if not already selected
         this.addContextWaypoint(waypointName);
+    }
+
+    insertDroneContext(droneName) {
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+            const currentValue = chatInput.value;
+            const cursorPos = chatInput.selectionStart;
+            const newValue = currentValue.slice(0, cursorPos) + `@${droneName} ` + currentValue.slice(cursorPos);
+            chatInput.value = newValue;
+            chatInput.focus();
+            chatInput.setSelectionRange(cursorPos + droneName.length + 2, cursorPos + droneName.length + 2);
+        }
+        this.hideContextDropdown();
+        
+        // Add to selected context drones
+        this.addContextDrone(droneName);
     }
 
     // Enhanced @ functionality methods
@@ -1621,33 +988,72 @@ class AIAgent {
     populateWaypointSuggestions(container, searchTerm) {
         container.innerHTML = '';
         
-        if (this.waypoints.length === 0) {
-            container.innerHTML = '<div class="suggestion-item empty">No waypoints available</div>';
-            return;
-        }
+        // Get waypoints and drones
+        const availableWaypoints = this.waypointStorage.getWaypoints() || [];
+        const availableDrones = window.droneListManager ? window.droneListManager.getDronesForDisplay() : [];
         
         // Filter waypoints based on search term
-        const filteredWaypoints = this.waypoints.filter(waypoint => 
+        const filteredWaypoints = availableWaypoints.filter(waypoint => 
             waypoint.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
         
-        if (filteredWaypoints.length === 0) {
-            container.innerHTML = '<div class="suggestion-item empty">No waypoints found</div>';
+        // Filter drones based on search term
+        const filteredDrones = availableDrones.filter(drone => 
+            drone.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        const totalItems = filteredWaypoints.length + filteredDrones.length;
+        
+        if (totalItems === 0) {
+            const emptyMessage = availableWaypoints.length === 0 && availableDrones.length === 0 
+                ? 'No waypoints or drones available' 
+                : 'No waypoints or drones found';
+            container.innerHTML = `<div class="suggestion-item empty">${emptyMessage}</div>`;
             return;
         }
         
-        // Add waypoint suggestions
-        filteredWaypoints.forEach((waypoint, index) => {
+        let itemIndex = 0;
+        
+        // Add drone suggestions first
+        filteredDrones.forEach((drone) => {
             const item = document.createElement('div');
-            item.className = 'suggestion-item';
-            item.dataset.index = index;
+            item.className = 'suggestion-item drone-suggestion';
+            item.dataset.index = itemIndex++;
+            item.dataset.type = 'drone';
+            item.dataset.name = drone.name;
+            item.innerHTML = `
+                <i class="fas fa-drone"></i>
+                <span class="drone-name">${drone.name}</span>
+                <span class="drone-type">${drone.type}</span>
+            `;
+            
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🚁 Drone clicked:', drone.name);
+                this.insertDroneInText(drone.name);
+            });
+            
+            container.appendChild(item);
+        });
+        
+        // Add waypoint suggestions
+        filteredWaypoints.forEach((waypoint) => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item waypoint-suggestion';
+            item.dataset.index = itemIndex++;
+            item.dataset.type = 'waypoint';
+            item.dataset.name = waypoint.name;
             item.innerHTML = `
                 <i class="fas fa-map-marker-alt"></i>
                 <span class="waypoint-name">${waypoint.name}</span>
                 <span class="waypoint-type">${waypoint.type}</span>
             `;
             
-            item.addEventListener('click', () => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('📍 Waypoint clicked:', waypoint.name);
                 this.insertWaypointInText(waypoint.name);
             });
             
@@ -1691,8 +1097,14 @@ class AIAgent {
         const items = suggestionsDropdown.querySelectorAll('.suggestion-item:not(.empty)');
         if (this.currentSuggestionIndex >= 0 && this.currentSuggestionIndex < items.length) {
             const selectedItem = items[this.currentSuggestionIndex];
-            const waypointName = selectedItem.querySelector('.waypoint-name').textContent;
-            this.insertWaypointInText(waypointName);
+            const itemType = selectedItem.dataset.type;
+            const itemName = selectedItem.dataset.name;
+            
+            if (itemType === 'drone') {
+                this.insertDroneInText(itemName);
+            } else {
+                this.insertWaypointInText(itemName);
+            }
         }
     }
 
@@ -1727,6 +1139,37 @@ class AIAgent {
         input.focus();
     }
 
+    insertDroneInText(droneName) {
+        const input = this.currentSuggestionsInput;
+        if (!input) return;
+        
+        const value = input.value;
+        const cursorPos = input.selectionStart;
+        const beforeCursor = value.substring(0, cursorPos);
+        const afterCursor = value.substring(cursorPos);
+        
+        // Find the last @ symbol before cursor
+        const lastAtSymbol = beforeCursor.lastIndexOf('@');
+        if (lastAtSymbol === -1) return;
+        
+        // Replace from @ to cursor with the drone name
+        const newValue = value.substring(0, lastAtSymbol) + `@${droneName} ` + afterCursor;
+        input.value = newValue;
+        
+        // Set cursor position after the inserted drone
+        const newCursorPos = lastAtSymbol + droneName.length + 2; // +2 for @ and space
+        input.setSelectionRange(newCursorPos, newCursorPos);
+        
+        // Hide suggestions
+        this.hideWaypointSuggestions();
+        
+        // Add to selected context drones
+        this.addContextDrone(droneName);
+        
+        // Focus back to input
+        input.focus();
+    }
+
     addContextWaypoint(waypointName) {
         if (!this.selectedContextWaypoints.includes(waypointName)) {
             this.selectedContextWaypoints.push(waypointName);
@@ -1751,19 +1194,22 @@ class AIAgent {
         
         this.contextWaypointsContainer.innerHTML = '';
         
-        if (this.selectedContextWaypoints.length === 0) {
+        const totalItems = this.selectedContextWaypoints.length + this.selectedContextDrones.length;
+        if (totalItems === 0) {
             this.contextWaypointsContainer.style.display = 'none';
             return;
         }
         
         this.contextWaypointsContainer.style.display = 'block';
         
+        // Add waypoint tags
         this.selectedContextWaypoints.forEach(waypointName => {
             const waypointTag = document.createElement('div');
             waypointTag.className = 'context-waypoint-tag';
             waypointTag.innerHTML = `
+                <i class="fas fa-map-marker-alt"></i>
                 <span class="waypoint-name">@${waypointName}</span>
-                <button class="remove-waypoint-btn" data-waypoint="${waypointName}">
+                <button class="remove-waypoint-btn" data-waypoint="${waypointName}" data-type="waypoint">
                     <i class="fas fa-times"></i>
                 </button>
             `;
@@ -1791,6 +1237,42 @@ class AIAgent {
             
             this.contextWaypointsContainer.appendChild(waypointTag);
         });
+
+        // Add drone tags
+        this.selectedContextDrones.forEach(droneName => {
+            const droneTag = document.createElement('div');
+            droneTag.className = 'context-waypoint-tag context-drone-tag';
+            droneTag.innerHTML = `
+                <i class="fas fa-drone"></i>
+                <span class="drone-name">@${droneName}</span>
+                <button class="remove-drone-btn" data-drone="${droneName}" data-type="drone">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            // Add hover effect for close button
+            droneTag.addEventListener('mouseenter', () => {
+                const closeBtn = droneTag.querySelector('.remove-drone-btn');
+                if (closeBtn) closeBtn.style.opacity = '1';
+            });
+            
+            droneTag.addEventListener('mouseleave', () => {
+                const closeBtn = droneTag.querySelector('.remove-drone-btn');
+                if (closeBtn) closeBtn.style.opacity = '0.5';
+            });
+            
+            // Add click handler for remove button
+            const removeBtn = droneTag.querySelector('.remove-drone-btn');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.removeContextDrone(droneName);
+                });
+            }
+            
+            this.contextWaypointsContainer.appendChild(droneTag);
+        });
     }
 
     getSelectedContextWaypoints() {
@@ -1802,30 +1284,40 @@ class AIAgent {
         this.updateContextWaypointsDisplay();
     }
 
-    
-
-    
-
-    // Ensure drawing tools are properly connected
-    ensureDrawingToolsConnection() {
-        // Check if map controls manager exists and has drawing tools
-        if (window.mapControlsManager) {
-            // Try to reinitialize drawing tools if they don't exist
-            if (!window.mapControlsManager.drawingTools) {
-                const success = window.mapControlsManager.reinitializeDrawingTools();
-                if (success) {
-                    console.log('✅ Drawing tools connected to AI Agent');
-                    this.addAIMessage('🎨 Drawing tools are now ready! Click the drawing buttons to start creating waypoints.');
-                } else {
-                    console.warn('⚠️ Could not connect drawing tools to AI Agent');
-                }
-            } else {
-                console.log('✅ Drawing tools already connected');
-            }
-        } else {
-            console.warn('⚠️ Map controls manager not available');
+    // Drone context management methods
+    addContextDrone(droneName) {
+        if (!this.selectedContextDrones.includes(droneName)) {
+            this.selectedContextDrones.push(droneName);
+            this.updateContextWaypointsDisplay(); // Using same display for both waypoints and drones
+            console.log('Added context drone:', droneName);
+            console.log('Current context drones:', this.selectedContextDrones);
         }
     }
+
+    removeContextDrone(droneName) {
+        const index = this.selectedContextDrones.indexOf(droneName);
+        if (index > -1) {
+            this.selectedContextDrones.splice(index, 1);
+            this.updateContextWaypointsDisplay();
+            console.log('Removed context drone:', droneName);
+            console.log('Current context drones:', this.selectedContextDrones);
+        }
+    }
+
+    getSelectedContextDrones() {
+        return this.selectedContextDrones;
+    }
+
+    clearSelectedContextDrones() {
+        this.selectedContextDrones = [];
+        this.updateContextWaypointsDisplay();
+    }
+
+    
+
+    
+
+
 
     // Mode selection methods
     toggleModeDropdown() {

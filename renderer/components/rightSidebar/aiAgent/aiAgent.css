@@ -1267,6 +1267,46 @@
     font-size: 8px;
 }
 
+/* Drone tag specific styles */
+.context-drone-tag {
+    background-color: #ff6b35; /* Orange color for drones */
+}
+
+.context-drone-tag:hover {
+    background-color: #e55a2b; /* Darker orange on hover */
+}
+
+.context-drone-tag .drone-name {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.context-drone-tag .remove-drone-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 50%;
+    opacity: 0.5;
+    transition: all 0.2s ease;
+    padding: 0;
+    font-size: 10px;
+}
+
+.context-drone-tag .remove-drone-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    opacity: 1;
+}
+
+.context-drone-tag .remove-drone-btn i {
+    font-size: 8px;
+}
+
 /* Enhanced context dropdown styles */
 .context-dropdown {
     position: absolute;
@@ -1454,6 +1494,39 @@
 .suggestion-item.empty:hover {
     background-color: transparent;
     color: var(--text-secondary);
+}
+
+/* Drone suggestion specific styles */
+.suggestion-item.drone-suggestion i {
+    color: #ff6b35; /* Orange color for drone icon */
+}
+
+.suggestion-item.drone-suggestion:hover i,
+.suggestion-item.drone-suggestion.selected i {
+    color: white;
+}
+
+.suggestion-item .drone-name {
+    flex: 1;
+    font-weight: 500;
+    font-size: var(--font-small);
+}
+
+.suggestion-item .drone-type {
+    font-size: 10px;
+    color: var(--text-secondary);
+    text-transform: capitalize;
+    padding: 2px 6px;
+    background-color: #ff6b35;
+    color: white;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.suggestion-item:hover .drone-type,
+.suggestion-item.selected .drone-type {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
 }
 
 /* Scrollbar for suggestions dropdown */

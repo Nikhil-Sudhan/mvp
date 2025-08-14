@@ -181,8 +181,18 @@ class SidebarManager {
                 if (window.AIAgent && !window.aiAgentInstance) {
                     console.log('✅ Creating new AIAgent instance');
                     window.aiAgentInstance = new window.AIAgent();
-                } else if (window.aiAgent && window.aiAgentInstance) {
-                    console.log('✅ AIAgent instance already exists');
+                } else if (window.AIAgent && window.aiAgentInstance) {
+                    console.log('✅ AIAgent instance already exists - rebinding to DOM');
+                    try {
+                        // Rebind listeners to freshly loaded DOM
+                        window.aiAgentInstance.setupEventListeners();
+                        window.aiAgentInstance.updateWaypointsList();
+                        window.aiAgentInstance.initializeContextWaypointsDisplay();
+                        window.aiAgentInstance.showStartButton();
+                        window.aiAgentInstance.ensureDrawingToolsConnection();
+                    } catch (e) {
+                        console.error('❌ Failed to rebind AIAgent to new DOM:', e);
+                    }
                 } else if (!window.AIAgent) {
                     console.error('❌ AIAgent class not found when loading panel');
                 }

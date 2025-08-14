@@ -152,21 +152,25 @@ class MapControlsManager {
     initializeDrawingTools() {
         // Initialize drawing tools if the class is available
         if (window.DrawingTools && this.viewer) {
-            // Wait for AI Agent instance to be available
-            if (window.aiAgentInstance) {
-                this.drawingTools = new window.DrawingTools(this.viewer, window.aiAgentInstance);
-                console.log('✅ Drawing tools initialized with AI Agent');
-            } else {
-                // Retry after a delay if AI Agent is not ready
-                setTimeout(() => {
-                    if (window.aiAgentInstance) {
-                        this.drawingTools = new window.DrawingTools(this.viewer, window.aiAgentInstance);
-                        console.log('✅ Drawing tools initialized with AI Agent (delayed)');
-                    } else {
-                        console.warn('❌ AI Agent instance not available for drawing tools');
-                    }
-                }, 1000);
-            }
+            // Wait for AI Agent instance to be available with multiple retries
+            const tryInitialize = (attempt = 0, maxAttempts = 10) => {
+                if (window.aiAgentInstance) {
+                    this.drawingTools = new window.DrawingTools(this.viewer, window.aiAgentInstance);
+                    // Expose globally for keyboard shortcut handler in DrawingTools
+                    window.drawingToolsInstance = this.drawingTools;
+                    console.log('✅ Drawing tools initialized with AI Agent');
+                    
+                    // Ensure drawing tools are connected
+                    this.drawingTools.ensureDrawingToolsConnection();
+                    return;
+                }
+                if (attempt < maxAttempts) {
+                    setTimeout(() => tryInitialize(attempt + 1, maxAttempts), 300);
+                } else {
+                    console.warn('❌ AI Agent instance not available for drawing tools after retries');
+                }
+            };
+            tryInitialize();
         } else {
             console.warn('❌ Drawing tools or viewer not available');
         }
@@ -525,6 +529,14 @@ class MapControlsManager {
             case 'polygon':
             case 'square':
             case 'circle':
+                if (!this.drawingTools && window.DrawingTools && this.viewer) {
+                    // Lazy-initialize if missing at click time
+                    this.drawingTools = new window.DrawingTools(this.viewer, window.aiAgentInstance || null);
+                    window.drawingToolsInstance = this.drawingTools;
+                    
+                    // Ensure drawing tools are connected
+                    this.drawingTools.ensureDrawingToolsConnection();
+                }
                 if (this.drawingTools) {
                     this.drawingTools.selectTool(toolType);
                 } else {
@@ -532,6 +544,14 @@ class MapControlsManager {
                 }
                 break;
             case 'erase':
+                if (!this.drawingTools && window.DrawingTools && this.viewer) {
+                    // Lazy-initialize if missing at click time
+                    this.drawingTools = new window.DrawingTools(this.viewer, window.aiAgentInstance || null);
+                    window.drawingToolsInstance = this.drawingTools;
+                    
+                    // Ensure drawing tools are connected
+                    this.drawingTools.ensureDrawingToolsConnection();
+                }
                 if (this.drawingTools) {
                     this.drawingTools.selectTool('erase');
                 } else {
@@ -616,7 +636,11 @@ class MapControlsManager {
     reinitializeDrawingTools() {
         if (window.aiAgentInstance && this.viewer && !this.drawingTools) {
             this.drawingTools = new window.DrawingTools(this.viewer, window.aiAgentInstance);
+            window.drawingToolsInstance = this.drawingTools;
             console.log('✅ Drawing tools reinitialized with AI Agent');
+            
+            // Ensure drawing tools are connected
+            this.drawingTools.ensureDrawingToolsConnection();
             return true;
         }
         return false;

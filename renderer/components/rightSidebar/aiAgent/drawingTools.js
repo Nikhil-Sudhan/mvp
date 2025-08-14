@@ -8,6 +8,9 @@ class DrawingTools {
         this.activeEntity = null;
         this.activePoints = [];
         
+        // Waypoint modal management
+        this.currentPolygon = null;
+        
         // Tool types
         this.tools = {
             POLYGON: 'polygon',
@@ -21,6 +24,7 @@ class DrawingTools {
 
     init() {
         this.setupMapControls();
+        this.setupWaypointModalEvents();
     }
 
     setupMapControls() {
@@ -37,6 +41,123 @@ class DrawingTools {
         }
 
         // Note: Clear all button is handled by MapControlsManager to avoid duplicates
+    }
+
+    setupWaypointModalEvents() {
+        // Waypoint modal events
+        const saveWaypointBtn = document.getElementById('save-waypoint');
+        const cancelWaypointBtn = document.getElementById('cancel-waypoint');
+        const waypointInput = document.getElementById('waypoint-input');
+
+        if (saveWaypointBtn) {
+            saveWaypointBtn.addEventListener('click', () => {
+                this.saveCurrentWaypoint();
+            });
+        }
+
+        if (cancelWaypointBtn) {
+            cancelWaypointBtn.addEventListener('click', () => {
+                this.hideWaypointModal();
+            });
+        }
+
+        if (waypointInput) {
+            waypointInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    this.saveCurrentWaypoint();
+                } else if (e.key === 'Escape') {
+                    this.hideWaypointModal();
+                }
+            });
+        }
+    }
+
+    // Waypoint modal management methods
+    showWaypointModal() {
+        const modal = document.getElementById('waypoint-modal');
+        const input = document.getElementById('waypoint-input');
+        
+        if (modal && input) {
+            modal.style.display = 'flex';
+            input.value = '';
+            input.focus();
+        }
+    }
+
+    hideWaypointModal() {
+        const modal = document.getElementById('waypoint-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        this.currentPolygon = null;
+    }
+
+    async saveCurrentWaypoint() {
+        const input = document.getElementById('waypoint-input');
+        if (!input || !this.currentPolygon) return;
+
+        const name = input.value.trim();
+        if (!name) {
+            if (this.aiAgent) {
+                this.aiAgent.addAIMessage('Please enter a name for the waypoint.');
+            }
+            return;
+        }
+
+        try {
+            // Create waypoint using storage
+            const waypoint = await this.aiAgent.waypointStorage.createWaypoint(name, this.currentPolygon);
+            
+            // Update UI
+            this.aiAgent.updateWaypointsList();
+            
+            // Hide modal
+            this.hideWaypointModal();
+            
+            // Add success message
+            if (this.aiAgent) {
+                this.aiAgent.addAIMessage(`✅ Waypoint "${name}" saved successfully!`);
+            }
+            
+        } catch (error) {
+            console.error('Failed to save waypoint:', error);
+            if (this.aiAgent) {
+                this.aiAgent.addAIMessage(`❌ Failed to save waypoint: ${error.message}`);
+            }
+        }
+    }
+
+    // Ensure drawing tools are properly connected
+    ensureDrawingToolsConnection() {
+        // Check if map controls manager exists and has drawing tools
+        if (window.mapControlsManager) {
+            // Try to reinitialize drawing tools if they don't exist
+            if (!window.mapControlsManager.drawingTools) {
+                const success = window.mapControlsManager.reinitializeDrawingTools();
+                if (success) {
+                    console.log('✅ Drawing tools connected to AI Agent');
+                    if (this.aiAgent) {
+                        this.aiAgent.addAIMessage('🎨 Drawing tools are now ready! Click the drawing buttons to start creating waypoints.');
+                    }
+                } else {
+                    console.warn('⚠️ Could not connect drawing tools to AI Agent');
+                }
+            } else {
+                console.log('✅ Drawing tools already connected');
+            }
+        } else {
+            console.warn('⚠️ Map controls manager not available');
+        }
+    }
+
+    // Check if drawing tools are connected
+    isConnected() {
+        return window.mapControlsManager && window.mapControlsManager.drawingTools;
+    }
+
+    // Get drawing tools instance
+    getInstance() {
+        return window.mapControlsManager ? window.mapControlsManager.drawingTools : null;
     }
 
     selectTool(toolType) {
@@ -357,17 +478,14 @@ class DrawingTools {
                 this.viewer.entities.remove(pickedObject.id);
                 
                 // Remove from waypoints if it exists
-                if (this.aiAgent && this.aiAgent.waypoints) {
-                    const waypointIndex = this.aiAgent.waypoints.findIndex(w => w.entityId === pickedObject.id.id);
+                if (this.aiAgent && this.aiAgent.waypointStorage) {
+                    const waypoints = this.aiAgent.waypointStorage.getWaypoints();
+                    const waypointIndex = waypoints.findIndex(w => w.entityId === pickedObject.id.id);
                     if (waypointIndex !== -1) {
-                        const deletedWaypoint = this.aiAgent.waypoints[waypointIndex];
-                        this.aiAgent.waypoints.splice(waypointIndex, 1);
+                        const deletedWaypoint = waypoints[waypointIndex];
                         
-                        // Save waypoints to storage
-                        await this.aiAgent.waypointStorage.saveWaypoints(this.aiAgent.waypoints);
-                        
-                        // Delete individual waypoint file
-                        await this.aiAgent.deleteIndividualWaypointFile(deletedWaypoint.name);
+                        // Delete waypoint using storage
+                        await this.aiAgent.waypointStorage.deleteWaypoint(deletedWaypoint.id);
                         
                         // Update UI
                         this.aiAgent.updateWaypointsList();
@@ -434,22 +552,14 @@ class DrawingTools {
         }
 
         // Prepare for waypoint saving
-        this.aiAgent.currentPolygon = {
+        this.currentPolygon = {
             entity: this.activeEntity,
             positions: this.activePoints.slice(),
             type: this.currentTool
         };
         
-        // Emit drawing completed event for synchronization (disabled for now)
-        // this.emitDrawingEvent('drawingCompleted', this.aiAgent.currentPolygon);
-        
-        // Automatically save waypoint with default name
-        this.aiAgent.saveCurrentWaypointAuto();
-        
-        // Add success message
-        if (this.aiAgent) {
-            this.aiAgent.addAIMessage(`✅ Shape completed and saved as waypoint! Drawing tool deactivated.`);
-        }
+        // Show waypoint modal for naming
+        this.showWaypointModal();
         
         this.stopDrawing();
     }
@@ -499,10 +609,9 @@ class DrawingTools {
             this.viewer.entities.remove(entity);
         });
 
-        // Clear waypoints from AI agent
-        if (this.aiAgent) {
-            this.aiAgent.waypoints = [];
-            this.aiAgent.saveWaypoints();
+        // Clear waypoints from storage
+        if (this.aiAgent && this.aiAgent.waypointStorage) {
+            this.aiAgent.waypointStorage.clearAll();
             this.aiAgent.updateWaypointsList();
             this.aiAgent.addAIMessage(`Cleared all shapes and waypoints.`);
         }
@@ -526,6 +635,147 @@ class DrawingTools {
         // Disabled to prevent crashes
         console.log(`📡 Drawing event emission disabled: ${eventType}`);
     }
+
+    // =====================
+    // Waypoint save helpers
+    // =====================
+    async saveWaypointWithName(name) {
+        if (!this.aiAgent || !this.currentPolygon) return;
+
+        const waypoints = this.aiAgent.waypointStorage.getWaypoints();
+        const existingWaypoint = waypoints.find(w => w.name === name);
+        if (existingWaypoint) {
+            this.aiAgent.addAIMessage(`A waypoint named "${name}" already exists. Please choose a different name.`);
+            return;
+        }
+
+        try {
+            const coordinates = this.currentPolygon.positions.map(pos => {
+                const cartographic = Cesium.Cartographic.fromCartesian(pos);
+                return {
+                    lat: Cesium.Math.toDegrees(cartographic.latitude),
+                    lon: Cesium.Math.toDegrees(cartographic.longitude),
+                    alt: cartographic.height || 100
+                };
+            });
+
+            const waypoint = {
+                id: Date.now().toString(),
+                name: name,
+                type: this.currentPolygon.type,
+                coordinates: coordinates,
+                created: new Date().toISOString(),
+                entityId: this.currentPolygon.entity.id,
+                description: `${this.currentPolygon.type} waypoint created via drawing tools`,
+                tags: [this.currentPolygon.type, 'waypoint', 'drawn'],
+                metadata: {
+                    pointCount: coordinates.length,
+                    area: this.calculateArea(coordinates),
+                    perimeter: this.calculatePerimeter(coordinates)
+                }
+            };
+
+
+
+            this.aiAgent.updateWaypointsList();
+            this.aiAgent.addAIMessage(`✅ Waypoint "${name}" saved successfully!`);
+        } catch (error) {
+            console.error('Failed to save named waypoint:', error);
+            this.aiAgent.addAIMessage(`❌ Failed to save waypoint: ${error.message}`);
+        }
+    }
+
+    async saveCurrentWaypointAuto() {
+        try {
+            if (!this.activeEntity || !this.activePoints || this.activePoints.length === 0) {
+                return;
+            }
+
+
+
+            // Generate default unique name
+            const availableWaypoints = this.aiAgent?.waypointStorage?.getWaypoints() || [];
+            const waypointCount = availableWaypoints.length + 1;
+            const defaultName = `Waypoint#${waypointCount}`;
+            let finalName = defaultName;
+            let counter = 1;
+            while (availableWaypoints.find(w => w.name === finalName)) {
+                finalName = `Waypoint#${waypointCount + counter}`;
+                counter++;
+            }
+
+            // Convert positions to lat/lon coordinates
+            const coordinates = this.activePoints.map(pos => {
+                const cartographic = Cesium.Cartographic.fromCartesian(pos);
+                return {
+                    lat: Cesium.Math.toDegrees(cartographic.latitude),
+                    lon: Cesium.Math.toDegrees(cartographic.longitude),
+                    alt: cartographic.height || 100
+                };
+            });
+
+            // Unique id and duplicate check by entity id
+            const uniqueId = `${Date.now()}_${this.activeEntity.id}`;
+            const existingWaypoint = availableWaypoints.find(w => w.entityId === this.activeEntity.id);
+            if (existingWaypoint) {
+                return;
+            }
+
+            const waypoint = {
+                id: uniqueId,
+                name: finalName,
+                type: this.currentTool,
+                coordinates: coordinates,
+                created: new Date().toISOString(),
+                entityId: this.activeEntity.id,
+                description: `${this.currentTool} waypoint created via drawing tools`,
+                tags: [this.currentTool, 'waypoint', 'drawn'],
+                metadata: {
+                    pointCount: coordinates.length,
+                    area: this.calculateArea(coordinates),
+                    perimeter: this.calculatePerimeter(coordinates)
+                }
+            };
+
+            // Append and persist
+            if (this.aiAgent) {
+                await this.aiAgent.waypointStorage.saveIndividualWaypointFile(waypoint);
+                this.aiAgent.updateWaypointsList();
+                this.aiAgent.updateTrackMissionWithAllWaypoints();
+                this.aiAgent.addAIMessage(`✅ Waypoint "${finalName}" created automatically! Double-click the name to rename it.`);
+                // Clear current polygon reference
+                this.currentPolygon = null;
+            }
+        } catch (error) {
+            console.error('Failed to auto-save waypoint:', error);
+            if (this.aiAgent) {
+                this.aiAgent.addAIMessage(`❌ Failed to save waypoint: ${error.message}`);
+            }
+        }
+    }
+
+    calculateArea(coordinates) {
+        if (!coordinates || coordinates.length < 3) return 0;
+        let area = 0;
+        for (let i = 0; i < coordinates.length; i++) {
+            const j = (i + 1) % coordinates.length;
+            area += coordinates[i].lon * coordinates[j].lat;
+            area -= coordinates[j].lon * coordinates[i].lat;
+        }
+        return Math.abs(area) / 2;
+    }
+
+    calculatePerimeter(coordinates) {
+        if (!coordinates || coordinates.length < 2) return 0;
+        let perimeter = 0;
+        for (let i = 0; i < coordinates.length; i++) {
+            const j = (i + 1) % coordinates.length;
+            const dx = coordinates[j].lon - coordinates[i].lon;
+            const dy = coordinates[j].lat - coordinates[i].lat;
+            perimeter += Math.sqrt(dx * dx + dy * dy);
+        }
+        return perimeter;
+    }
 }
 
 // Set up global keyboard listener
@@ -536,4 +786,23 @@ document.addEventListener('keydown', (event) => {
 });
 
 // Export for global access
-window.DrawingTools = DrawingTools; 
+window.DrawingTools = DrawingTools;
+
+// Global waypoint modal functions for external access
+window.showWaypointModal = () => {
+    if (window.drawingToolsInstance) {
+        window.drawingToolsInstance.showWaypointModal();
+    }
+};
+
+window.hideWaypointModal = () => {
+    if (window.drawingToolsInstance) {
+        window.drawingToolsInstance.hideWaypointModal();
+    }
+};
+
+window.saveCurrentWaypoint = () => {
+    if (window.drawingToolsInstance) {
+        window.drawingToolsInstance.saveCurrentWaypoint();
+    }
+}; 

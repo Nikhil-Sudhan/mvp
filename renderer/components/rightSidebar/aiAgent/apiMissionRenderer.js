@@ -2,6 +2,180 @@ class ApiMissionRenderer {
     constructor() {
         this.viewer = null;
         this.renderedEntityIds = new Set();
+        this.aiAgent = null;
+    }
+
+    // Set reference to AI Agent for message handling
+    setAIAgent(aiAgentInstance) {
+        this.aiAgent = aiAgentInstance;
+    }
+
+    // API communication methods
+    async sendToAPI(command) {
+        if (!window.AIAgentAPI) {
+            this.addAIMessage('API not available');
+            return;
+        }
+
+        try {
+            const result = await window.AIAgentAPI.sendCommand(command);
+            if (result.success) {
+                this.addAIMessage(`✅ Command sent: "${command}"`);
+                if (result.data) {
+                    this.addAIMessage(`Response: ${JSON.stringify(result.data)}`);
+
+                    // Save mission JSON to cache and renderer if mission is present
+                    try {
+                        console.log('🔥 Attempting to FORCE save mission data from regular API call...', result.data);
+                        if (window.MissionDataAPI?.forceSaveMissionData) {
+                            console.log('🔥 MissionDataAPI.forceSaveMissionData exists, calling it...');
+                            await window.MissionDataAPI.forceSaveMissionData(result.data);
+                        } else if (window.MissionDataAPI?.saveMissionDataFromApi) {
+                            console.log('🔥 Using regular saveMissionDataFromApi...');
+                            await window.MissionDataAPI.saveMissionDataFromApi(result.data);
+                        } else {
+                            console.error('🔥 ERROR: No MissionDataAPI save functions available!');
+                        }
+                    } catch (e) {
+                        console.error('🔥 Failed to persist mission data:', e);
+                        console.error('🔥 Error stack:', e.stack);
+                    }
+                }
+            } else {
+                this.addAIMessage(`❌ Error: ${result.error}`);
+            }
+        } catch (error) {
+            this.addAIMessage(`❌ Error: ${error.message}`);
+        }
+    }
+
+    async sendToAPIWithWaypoints(command, waypointData, droneName = null) {
+        if (!window.AIAgentAPI) {
+            this.addAIMessage('API not available');
+            return;
+        }
+
+        try {
+            const result = await window.AIAgentAPI.sendCommandWithWaypoints(command, waypointData, droneName);
+            if (result.success) {
+                this.addAIMessage(`✅ Command sent: "${command}"`);
+                if (waypointData.length > 0) {
+                    this.addAIMessage(`📍 Waypoints included: ${waypointData.length} waypoint(s)`);
+                }
+                if (droneName) {
+                    this.addAIMessage(`🚁 Target drone: ${droneName}`);
+                }
+                
+                if (result.data) {
+                    this.addAIMessage(`Response: ${JSON.stringify(result.data)}`);
+                    try {
+                        // Render mission on map
+                        this.renderFromApiResponse(result.data, { 
+                            clearPrevious: true, 
+                            flyTo: true,
+                            selectedDrone: droneName
+                        });
+                        this.addAIMessage('🗺️ Rendered mission on map with drone context');
+                        
+                        // Also persist mission JSON for later viewing and auto-reload
+                        console.log('🔥 Attempting to FORCE save mission data from waypoints API call...', result.data);
+                        if (window.MissionDataAPI?.forceSaveMissionData) {
+                            console.log('🔥 MissionDataAPI.forceSaveMissionData exists, calling it...');
+                            await window.MissionDataAPI.forceSaveMissionData(result.data);
+                        } else if (window.MissionDataAPI?.saveMissionDataFromApi) {
+                            console.log('🔥 Using regular saveMissionDataFromApi...');
+                            await window.MissionDataAPI.saveMissionDataFromApi(result.data);
+                        } else {
+                            console.error('🔥 ERROR: No MissionDataAPI save functions available!');
+                        }
+                    } catch (e) {
+                        console.error('Failed to render mission on map:', e);
+                        this.addAIMessage('⚠️ Could not render mission on map');
+                    }
+                }
+            } else {
+                this.addAIMessage(`❌ Error: ${result.error}`);
+            }
+        } catch (error) {
+            this.addAIMessage(`❌ Error: ${error.message}`);
+        }
+    }
+
+    // Send message with context handling
+    async sendMessage(message, contextWaypoints = [], contextDrones = []) {
+        if (!message || !message.trim()) {
+            this.addAIMessage('Please enter a message to send.');
+            return;
+        }
+
+        console.log('📤 sendMessage called');
+        console.log('📝 Message content:', message);
+        console.log('📍 Context waypoints:', contextWaypoints);
+        console.log('🚁 Context drones:', contextDrones);
+        
+        // Extract waypoint data for selected waypoints
+        const waypointData = this.getWaypointDataForContext(contextWaypoints);
+        console.log('🗺️ Waypoint data for API:', waypointData);
+        
+        // Prepare command with mode and model context
+        let command = message;
+        if (this.aiAgent?.selectedMode) {
+            command = `[${this.aiAgent.selectedMode.toUpperCase()}] ${command}`;
+        }
+        if (this.aiAgent?.selectedModel && this.aiAgent.selectedModel !== 'auto') {
+            command = `[${this.aiAgent.selectedModel.toUpperCase()}] ${command}`;
+        }
+        
+        console.log('📡 Final command:', command);
+        
+        // Send to appropriate API endpoint
+        if (waypointData.length > 0 || contextDrones.length > 0) {
+            // Use the waypoint endpoint with optional drone data
+            const primaryDrone = contextDrones.length > 0 ? contextDrones[0] : null;
+            await this.sendToAPIWithWaypoints(command, waypointData, primaryDrone);
+        } else {
+            // Use the regular endpoint
+            await this.sendToAPI(command);
+        }
+    }
+
+    // Get waypoint data for API context
+    getWaypointDataForContext(contextWaypointNames) {
+        if (!this.aiAgent?.waypointStorage) {
+            return [];
+        }
+        
+        return this.aiAgent.waypointStorage.getWaypointDataForContext(contextWaypointNames);
+    }
+
+    // Get waypoint data for context (global function)
+    static getWaypointDataForContext(contextWaypointNames) {
+        if (window.apiMissionRenderer) {
+            return window.apiMissionRenderer.getWaypointDataForContext(contextWaypointNames);
+        }
+        return [];
+    }
+
+    // Add AI message (delegate to AI Agent if available)
+    addAIMessage(text) {
+        if (this.aiAgent && this.aiAgent.addAIMessage) {
+            this.aiAgent.addAIMessage(text);
+        } else {
+            console.log('AI Message:', text);
+        }
+    }
+
+    // Send waypoints to backend
+    async sendWaypointsToBackend(missionName, waypointsData, contextWaypoints = []) {
+        if (!window.AIAgentAPI) {
+            throw new Error('AIAgentAPI not available');
+        }
+
+        return await window.AIAgentAPI.sendWaypointsToBackend(
+            missionName,
+            waypointsData,
+            contextWaypoints
+        );
     }
 
     getViewer() {
@@ -53,7 +227,7 @@ class ApiMissionRenderer {
                             material: Cesium.Color.ORANGE.withAlpha(0.2),
                             outline: true,
                             outlineColor: Cesium.Color.ORANGE,
-                            heightReference: Cesium.HeightReference.NONE
+                            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
                         }
                     });
                     this.renderedEntityIds.add(areaId);
@@ -87,11 +261,11 @@ class ApiMissionRenderer {
                         name: 'Mission Path',
                         polyline: {
                             positions: Cesium.Cartesian3.fromDegreesArrayHeights(coordsArray),
-                            width: 2,
+                            width: 10,
                             material: new Cesium.PolylineOutlineMaterialProperty({
                                 color: Cesium.Color.CYAN,
                                 outlineColor: Cesium.Color.BLACK,
-                                outlineWidth: 1
+                                outlineWidth: 3
                             }),
                             clampToGround: false
                         }
@@ -113,7 +287,7 @@ class ApiMissionRenderer {
                     const startEntity = viewer.entities.add({
                         id: startId,
                         position: Cesium.Cartesian3.fromDegrees(startLon, startLat, startAlt),
-                        point: { pixelSize: 8, color: Cesium.Color.LIME },
+                        point: { pixelSize: 10, color: Cesium.Color.LIME },
                         label: {
                             text: 'Start',
                             font: '14px sans-serif',
@@ -128,7 +302,7 @@ class ApiMissionRenderer {
                     const endEntity = viewer.entities.add({
                         id: endId,
                         position: Cesium.Cartesian3.fromDegrees(endLon, endLat, endAlt),
-                        point: { pixelSize: 8, color: Cesium.Color.RED },
+                        point: { pixelSize: 10, color: Cesium.Color.RED },
                         label: {
                             text: 'End',
                             font: '14px sans-serif',
@@ -167,5 +341,37 @@ class ApiMissionRenderer {
 
 // Export for global access
 window.ApiMissionRenderer = ApiMissionRenderer;
+
+// Global API functions for external access
+window.sendToAPI = (command) => {
+    if (window.apiMissionRenderer) {
+        return window.apiMissionRenderer.sendToAPI(command);
+    }
+};
+
+window.sendToAPIWithWaypoints = (command, waypointData, droneName) => {
+    if (window.apiMissionRenderer) {
+        return window.apiMissionRenderer.sendToAPIWithWaypoints(command, waypointData, droneName);
+    }
+};
+
+window.sendMessage = (message, contextWaypoints, contextDrones) => {
+    if (window.apiMissionRenderer) {
+        return window.apiMissionRenderer.sendMessage(message, contextWaypoints, contextDrones);
+    }
+};
+
+window.sendWaypointsToBackend = (missionName, waypointsData, contextWaypoints) => {
+    if (window.apiMissionRenderer) {
+        return window.apiMissionRenderer.sendWaypointsToBackend(missionName, waypointsData, contextWaypoints);
+    }
+};
+
+window.getWaypointDataForContext = (contextWaypointNames) => {
+    if (window.apiMissionRenderer) {
+        return window.apiMissionRenderer.getWaypointDataForContext(contextWaypointNames);
+    }
+    return [];
+};
 
 
